@@ -9,5 +9,16 @@
     "source": "mods/Worst_Game_0.0.0.1_src.zip",
     "desc": "1.4.5 Worst of Terraria of the Reset Version",
     "screenshots": []
+  },
+  {
+    "id": "1776514717687",
+    "name": "更差的体验",
+    "game": "terraria",
+    "version": "0.0.0.1",
+    "icon": "mods/更差的体验_0.0.0.1_icon.png",
+    "file": "mods/更差的体验_0.0.0.1.tmod",
+    "source": "mods/更差的体验_0.0.0.1_src.zip",
+    "desc": "1.4.5重制版更差的体验，持续更新ing",
+    "screenshots": []
   }
 ]
