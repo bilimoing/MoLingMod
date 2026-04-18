@@ -49,7 +49,7 @@ function toggleMusic() {
 window.addEventListener('beforeunload', ()=>{const b=document.getElementById('bgm');if(b){localStorage.setItem('music_time',b.currentTime);localStorage.setItem('music_playing',!b.paused?'true':'false');}});
 document.addEventListener('visibilitychange', ()=>{if(document.hidden){const b=document.getElementById('bgm');if(b)localStorage.setItem('music_playing',!b.paused?'true':'false');}});
 
-// 📦 数据加载 (从 GitHub 读取 mods.json)
+// 📦 数据加载
 let modsData = [];
 async function loadMods() {
   try {
@@ -107,11 +107,11 @@ function previewFile(inp, lblId) {
   else lbl.textContent = T[state.lang].sel_file;
 }
 
-// 🚀 核心：GitHub API 自动上传
+// 🚀 核心：GitHub API 自动上传 (已修复 SHA 冲突)
 async function handleUpload(e) {
   e.preventDefault();
   if(!state.ghToken) return alert(T[state.lang].token_req);
-  
+
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.textContent = '🚀 上传中...';
 
@@ -120,14 +120,13 @@ async function handleUpload(e) {
     const ver = document.getElementById('f-ver').value;
     const cat = document.getElementById('f-cat').value;
     const desc = document.getElementById('f-desc').value;
-    
+
     const iconFile = document.getElementById('f-icon').files[0];
     const modFile = document.getElementById('f-mod').files[0];
     const srcFile = document.getElementById('f-src').files[0];
 
     if(!iconFile || !modFile) throw new Error("必须选择图标和Mod文件");
 
-    // 生成安全路径
     const safeName = name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
     const extIcon = iconFile.name.split('.').pop();
     const extMod = modFile.name.split('.').pop();
@@ -139,28 +138,27 @@ async function handleUpload(e) {
       source: srcFile ? `mods/${safeName}_${ver}_src.${extSrc}` : null
     };
 
-    // 读取 Base64
     const b64 = f => new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(f); });
     const iconB64 = await b64(iconFile);
     const modB64 = await b64(modFile);
     const srcB64 = srcFile ? await b64(srcFile) : null;
 
-    // 并行上传文件
     await Promise.all([
       ghPut(paths.icon, iconB64, `Add icon: ${name}`),
       ghPut(paths.mod, modB64, `Add mod: ${name} v${ver}`),
       srcB64 ? ghPut(paths.source, srcB64, `Add source: ${name}`) : Promise.resolve()
     ]);
 
-    // 更新 mods.json
+    // 更新 mods.json (强制获取最新内容)
     let jsonContent = [];
-    try { const res = await ghGet('mods.json'); jsonContent = JSON.parse(atob(res.content)); } catch(e) {}
-    
+    try {
+      const raw = await ghGet('mods.json');
+      jsonContent = JSON.parse(atob(raw.content));
+    } catch(e) {}
+
     jsonContent.push({
-      id: Date.now().toString(),
-      name, game: cat, version: ver,
-      icon: paths.icon, file: paths.mod, source: paths.source,
-      desc, screenshots: []
+      id: Date.now().toString(), name, game: cat, version: ver,
+      icon: paths.icon, file: paths.mod, source: paths.source, desc, screenshots: []
     });
 
     await ghPut('mods.json', btoa(JSON.stringify(jsonContent, null, 2)), `Add Mod: ${name} v${ver}`);
@@ -169,33 +167,54 @@ async function handleUpload(e) {
     location.reload();
   } catch(err) {
     console.error(err);
-    alert(T[state.lang].err + ': ' + (err.message || '网络/API错误'));
+    alert(T[state.lang].err + ': ' + (err.message || err.errors?.[0]?.message || '网络/API错误'));
   } finally {
     btn.disabled = false; btn.textContent = T[state.lang].submit_upload;
   }
 }
 
-// GitHub API 封装
-function ghAPI(path, method='GET', body=null, sha=null) {
-  return fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}`, {
-    method, headers: {
-      'Authorization': `Bearer ${state.ghToken}`,
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28'
-    },
-    body: body ? JSON.stringify({ message: 'Auto update', content: body, ...(sha ? {sha} : {}) }) : null
-  }).then(res => {
-    if(!res.ok) return res.json().then(e => Promise.reject(e));
-    return res.json();
+// 🛡️ GitHub API 封装 (防冲突/防缓存)
+async function ghGet(path) {
+  const url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}?t=${Date.now()}`;
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
   });
+  if(!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+  return await res.json();
 }
 
-function ghGet(path) { return ghAPI(path, 'GET'); }
-async function ghPut(path, base64, msg) {
+async function ghPut(path, base64Content, message) {
+  let sha = null;
   try {
-    const file = await ghGet(path);
-    return ghAPI(path, 'PUT', base64, file.sha);
-  } catch { return ghAPI(path, 'PUT', base64); }
+    const fileData = await ghGet(path);
+    sha = fileData.sha;
+  } catch(e) { /* 文件不存在，直接创建 */ }
+
+  const payload = { message, content: base64Content };
+  if(sha) payload.sha = sha;
+
+  let res = await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
+    body: JSON.stringify(payload)
+  });
+
+  // 遇到 SHA 冲突自动重试一次
+  if(!res.ok) {
+    const err = await res.json();
+    if(err.message?.includes('expected') && sha) {
+      console.warn('SHA conflict, retrying...');
+      const fresh = await ghGet(path);
+      payload.sha = fresh.sha;
+      res = await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
+        body: JSON.stringify(payload)
+      });
+    }
+    if(!res.ok) throw await res.json();
+  }
+  return await res.json();
 }
 
 function loadAdminList() {
