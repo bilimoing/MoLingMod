@@ -14,10 +14,10 @@
 
 <main class="page-container">
   <a href="index.html" class="back-btn">← 返回主页</a>
-  <h2 class="page-title" data-i18n="admin_t">🔧 Mod 管理</h2>
+  <h2 class="page-title" data-i18n="admin_t">Mod 管理</h2>
 
   <div id="token-config" class="auth-box" style="margin-bottom:20px;">
-    <h3>🔑 GitHub API Token</h3>
+    <h3>GitHub API Token</h3>
     <p class="hint">用于自动上传/更新文件并同步 mods.json</p>
     <input type="password" id="gh-token" class="glass-input" placeholder="粘贴 github_pat_...">
     <label style="display:flex;align-items:center;margin:10px 0;color:#fff;font-size:0.9rem;cursor:pointer;" onclick="preventLabelJump(event)">
@@ -48,14 +48,31 @@
 
     <div id="tab-upload" class="tab-panel active">
       <form id="mod-form" onsubmit="handleFormSubmit(event)" class="glass-card">
-        <div class="fg"><label>Mod名称</label><input id="f-name" class="glass-input" required></div>
-        <div class="fg"><label>游戏分类</label><select id="f-cat" class="glass-select" required><option value="terraria">泰拉瑞亚</option><option value="stardew">星露谷物语</option><option value="minecraft">我的世界</option></select></div>
-        <div class="fg"><label>版本号</label><input id="f-ver" class="glass-input" placeholder="1.0.0" required></div>
-        <div class="fg"><label>图标</label><label class="glass-file-btn"><span id="lbl-icon">选择文件</span><input type="file" id="f-icon" accept="image/*" onchange="previewFile(this,'lbl-icon')"></label></div>
-        <div class="fg"><label>Mod文件</label><label class="glass-file-btn"><span id="lbl-mod">选择文件</span><input type="file" id="f-mod" onchange="previewFile(this,'lbl-mod')"></label></div>
-        <div class="fg"><label>源代码</label><label class="glass-file-btn"><span id="lbl-src">选择文件</span><input type="file" id="f-src" onchange="previewFile(this,'lbl-src')"></label></div>
-        <div class="fg full"><label>描述</label><textarea id="f-desc" class="glass-input" rows="4" required></textarea></div>
-        <button type="submit" id="submit-btn" class="glass-btn full">🚀 提交上传</button>
+        <div class="fg"><label data-i18n="name">Mod名称</label><input id="f-name" class="glass-input" required></div>
+        <div class="fg"><label data-i18n="cat">游戏分类</label><select id="f-cat" class="glass-select" required><option value="terraria">泰拉瑞亚</option><option value="stardew">星露谷物语</option><option value="minecraft">我的世界</option></select></div>
+        <div class="fg"><label data-i18n="ver">版本号</label><input id="f-ver" class="glass-input" placeholder="1.0.0" required></div>
+        <div class="fg"><label data-i18n="icon">图标</label><label class="glass-file-btn"><span id="lbl-icon">选择文件</span><input type="file" id="f-icon" accept="image/*" onchange="previewFile(this,'lbl-icon')"></label></div>
+        <div class="fg"><label data-i18n="mod_file">Mod文件</label><label class="glass-file-btn"><span id="lbl-mod">选择文件</span><input type="file" id="f-mod" onchange="previewFile(this,'lbl-mod')"></label></div>
+        <div class="fg"><label data-i18n="source_file">源代码</label><label class="glass-file-btn"><span id="lbl-src">选择文件</span><input type="file" id="f-src" onchange="previewFile(this,'lbl-src')"></label></div>
+        <div class="fg full">
+          <label data-i18n="desc">描述</label><textarea id="f-desc" class="glass-input" rows="4" required></textarea>
+        </div>
+        <div class="fg full">
+          <label><span data-i18n="screenshots">预览图</span> (最多8个，支持图片/GIF/视频)</label>
+          <label class="glass-file-btn"><span id="lbl-screenshots">选择文件</span><input type="file" id="f-screenshots" accept="image/*,video/*" multiple onchange="previewScreenshots(this)"></label>
+          <div id="screenshot-preview" class="screenshot-preview"></div>
+        </div>
+        <div class="fg full">
+          <label><span data-i18n="tags">标签</span></label>
+          <p style="font-size:0.8rem;color:var(--mute);margin-bottom:8px;" data-i18n="preset_tags">预制标签</p>
+          <div id="preset-tags" class="tag-selector"></div>
+          <div class="manual-tag-input">
+            <input type="text" id="manual-tag" placeholder="输入自定义标签..." onkeypress="if(event.key==='Enter'){event.preventDefault();addManualTag();}">
+            <button type="button" onclick="addManualTag()" data-i18n="add_tag">添加</button>
+          </div>
+          <div id="selected-tags" class="selected-tags"></div>
+        </div>
+        <button type="submit" id="submit-btn" class="glass-btn full">🚀 <span data-i18n="submit_upload">提交上传</span></button>
       </form>
     </div>
 
@@ -73,7 +90,7 @@
         <div class="fg"><label>替换Mod文件 (留空保留)</label><label class="glass-file-btn"><span id="u-lbl-mod">不替换</span><input type="file" id="u-mod" onchange="previewFile(this,'u-lbl-mod')"></label></div>
         <div class="fg"><label>替换源代码 (留空保留)</label><label class="glass-file-btn"><span id="u-lbl-src">不替换</span><input type="file" id="u-src" onchange="previewFile(this,'u-lbl-src')"></label></div>
         <div class="fg full"><label>更新描述</label><label for="u-desc"></label><textarea id="u-desc" class="glass-input" rows="4" required></textarea></div>
-        <button type="submit" id="update-btn" class="glass-btn full" disabled>🔄 提交更新</button>
+        <button type="submit" id="update-btn" class="glass-btn full" disabled>提交更新</button>
       </form>
     </div>
 

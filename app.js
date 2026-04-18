@@ -9,16 +9,22 @@ const state = {
   mode: 'upload', editingId: null, isBusy: false
 };
 
-console.log('🔑 Token 状态:', state.ghToken ? '已加载 (' + state.ghToken.substring(0, 20) + '...)' : '未设置');
-console.log('🔐 登录状态:', state.auth ? '已登录' : '未登录');
+console.log('Token 状态:', state.ghToken ? '已加载 (' + state.ghToken.substring(0, 20) + '...)' : '未设置');
+console.log('登录状态:', state.auth ? '已登录' : '未登录');
 
 const T = {
-  zh: { title:'末泠的Mod库', terraria:'泰拉瑞亚', stardew:'星露谷物语', minecraft:'我的世界', admin:'🔧 管理后台', back:'返回主页', login_t:'管理员登录', hint:'默认密码: admin123', login_b:'登录', cancel:'取消', logout:'退出', admin_t:'🔧 Mod 管理', upload:'📤 上传', update:'🔄 更新', manage:'📋 列表', name:'名称', cat:'分类', ver:'版本', icon:'图标', mod_file:'Mod文件', source_file:'源码', desc:'描述', submit_upload:'🚀 提交', submit_update:'🔄 更新', del:'删除', none:'📦 暂无Mod', down:'⬇️ 下载', success:'✅ 成功！', err:'❌ 失败', loading:'📡 加载中...', token_req:'请先保存 Token', del_confirm:'确定删除？', retrying:'⏳ 重试中...', please_select:'请先选择', no_desc: '暂无描述' },
-  en: { title:"Moling's Mods", terraria:'Terraria', stardew:'Stardew Valley', minecraft:'Minecraft', admin:'🔧 Admin', back:'Back', login_t:'Admin Login', hint:'Default: admin123', login_b:'Login', cancel:'Cancel', logout:'Logout', admin_t:'🔧 Mod Admin', upload:'📤 Upload', update:'🔄 Update', manage:'📋 List', name:'Name', cat:'Category', ver:'Version', icon:'Icon', mod_file:'Mod File', source_file:'Source', desc:'Description', submit_upload:'🚀 Submit', submit_update:'🔄 Update', del:'Delete', none:'📦 No mods', down:'⬇️ Download', success:'✅ Success!', err:'❌ Failed', loading:'📡 Loading...', token_req:'Save Token first', del_confirm:'Delete?', retrying:'⏳ Retrying...', please_select:'Select first', no_desc: 'No description' }
+  zh: { title:'末泠的Mod库', terraria:'泰拉瑞亚', stardew:'星露谷物语', minecraft:'我的世界', admin:'管理后台', back:'返回主页', login_t:'管理员登录', hint:'默认密码: admin123', login_b:'登录', cancel:'取消', logout:'退出', admin_t:'Mod 管理', upload:'上传', update:'更新', manage:'列表', name:'名称', cat:'分类', ver:'版本', icon:'图标', mod_file:'Mod文件', source_file:'源码', desc:'描述', submit_upload:'提交', submit_update:'更新', del:'删除', none:'暂无Mod', down:'⬇下载', success:'成功！', err:'失败', loading:'加载中...', token_req:'请先保存 Token', del_confirm:'确定删除？', retrying:'重试中...', please_select:'请先选择', no_desc: '暂无描述', detail:'查看详情', screenshots:'预览图', tags:'标签', add_tag:'添加标签', preset_tags:'预制标签', manual_tag:'手动输入', mod_detail:'Mod 详情', source:'源码' },
+  en: { title:"Moling's Mods", terraria:'Terraria', stardew:'Stardew Valley', minecraft:'Minecraft', admin:'Admin', back:'Back', login_t:'Admin Login', hint:'Default: admin123', login_b:'Login', cancel:'Cancel', logout:'Logout', admin_t:'Mod Admin', upload:'Upload', update:'Update', manage:'List', name:'Name', cat:'Category', ver:'Version', icon:'Icon', mod_file:'Mod File', source_file:'Source', desc:'Description', submit_upload:'Submit', submit_update:'Update', del:'Delete', none:'No mods', down:'⬇Download', success:'Success!', err:'Failed', loading:'Loading...', token_req:'Save Token first', del_confirm:'Delete?', retrying:'Retrying...', please_select:'Select first', no_desc: 'No description', detail:'View Details', screenshots:'Screenshots', tags:'Tags', add_tag:'Add Tag', preset_tags:'Preset Tags', manual_tag:'Manual Input', mod_detail:'Mod Details', source:'Source' }
 };
 
 const utf8ToBase64 = str => btoa(new TextEncoder().encode(str).reduce((s,c)=>s+String.fromCharCode(c),''));
 const base64ToUtf8 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64), c=>c.charCodeAt(0)));
+
+// 🏷️ 预制标签
+const PRESET_TAGS = {
+  zh: ['新增内容', '实用辅助', '模组类库', '体验优化', '游戏调整', '视效调整', '音效调整', '地图生成', '翻译'],
+  en: ['New Content', 'Utility', 'Mod Library', 'Experience', 'Game Balance', 'Visual', 'Audio', 'Map Gen', 'Translation']
+};
 
 // 🖥️ UI 状态提示
 function setStatus(msg, color='#ff9f43') {
@@ -27,28 +33,28 @@ function setStatus(msg, color='#ff9f43') {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('✅ DOM 加载完成');
+  console.log('DOM 加载完成');
   applyLang(); initMusic();
-  if(state.ghToken) document.getElementById('token-status').textContent = '✅ Token 已就绪';
+  if(state.ghToken) document.getElementById('token-status').textContent = 'Token 已就绪';
 
-  console.log('🚀 初始化开始');
+  console.log('初始化开始');
   setStatus('📡 正在连接 GitHub...', '#4ade80');
 
-  console.log('⏳ 即将调用 loadMods...');
+  console.log('即将调用 loadMods...');
   await loadMods();
-  console.log('✅ loadMods 执行完毕, modsData.length =', modsData.length);
+  console.log('loadMods 执行完毕, modsData.length =', modsData.length);
 
   const page = document.body.dataset.page;
-  console.log('📄 识别页面:', page);
+  console.log('识别页面:', page);
 
   if (['terraria','stardew','minecraft'].includes(page)) {
-    console.log('🎮 准备渲染游戏页面:', page);
+    console.log('准备渲染游戏页面:', page);
     renderGamePage(page);
   }
   if (page === 'admin') initAdmin();
 });
 
-function setLang(l) { state.lang=l; localStorage.setItem('lang',l); applyLang(); renderCurrentPage(); }
+function setLang(l) { state.lang=l; localStorage.setItem('lang',l); applyLang(); renderCurrentPage(); renderPresetTags(); }
 function applyLang() {
   document.querySelectorAll('[data-i18n]').forEach(e => e.textContent = T[state.lang][e.dataset.i18n] || e.textContent);
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim()===(state.lang==='zh'?'中':'EN')));
@@ -76,8 +82,8 @@ document.addEventListener('visibilitychange', ()=>{if(document.hidden){const b=d
 let modsData = [];
 async function loadMods() {
   try {
-    console.log('🔄 开始加载 mods.json...');
-    console.log('🔑 Token 状态:', state.ghToken ? '已设置' : '未设置');
+    console.log('开始加载 mods.json...');
+    console.log('Token 状态:', state.ghToken ? '已设置' : '未设置');
     
     // 🔑 强制禁用缓存
     const url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
@@ -88,7 +94,7 @@ async function loadMods() {
     // 使用 Token（如果有）
     if(state.ghToken) {
       headers['Authorization'] = `Bearer ${state.ghToken}`;
-      console.log('🔑 使用 Token 认证');
+      console.log('使用 Token 认证');
     } else {
       console.log('⚠️ 未检测到 Token，尝试匿名访问');
     }
@@ -102,26 +108,26 @@ async function loadMods() {
     console.log('📡 GitHub API 响应状态:', res.status);
 
     if(res.status === 404) {
-      setStatus('⚠️ 仓库无 mods.json，请先去后台上传', '#ff4757');
+      setStatus('⚠仓库无 mods.json，请先去后台上传', '#ff4757');
       modsData = []; return;
     }
     if(res.status === 403) {
-      setStatus('❌ 访问被拒绝，请检查 Token 或仓库权限', '#ff4757');
+      setStatus('访问被拒绝，请检查 Token 或仓库权限', '#ff4757');
       modsData = []; return;
     }
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const json = await res.json();
-    console.log('📦 GitHub 返回数据类型:', typeof json);
+    console.log('GitHub 返回数据类型:', typeof json);
     
     modsData = json.content ? JSON.parse(base64ToUtf8(json.content)) : [];
-    console.log('✅ 数据加载成功，共', modsData.length, '个mod');
-    console.log('📋 Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
-    setStatus('✅ 数据已同步', '#4ade80');
+    console.log('数据加载成功，共', modsData.length, '个mod');
+    console.log('Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
+    setStatus('数据已同步', '#4ade80');
     setTimeout(() => setStatus(''), 2000);
   } catch(e) {
-    console.error('❌ 加载失败:', e);
-    setStatus(`❌ 网络错误: ${e.message}`, '#ff4757');
+    console.error('加载失败:', e);
+    setStatus(`网络错误: ${e.message}`, '#ff4757');
     document.getElementById('debug-status').style.cursor = 'pointer';
     document.getElementById('debug-status').onclick = () => location.reload();
     modsData = [];
@@ -130,7 +136,7 @@ async function loadMods() {
 
 function renderGamePage(game) {
   const grid = document.getElementById('mod-grid');
-  if(!grid) { setStatus('❌ 页面缺少 #mod-grid', '#ff4757'); return; }
+  if(!grid) { setStatus('页面缺少 #mod-grid', '#ff4757'); return; }
 
   const catMap = {
     '泰拉瑞亚': 'terraria', 'terraria': 'terraria', '泰拉': 'terraria',
@@ -138,8 +144,8 @@ function renderGamePage(game) {
     '我的世界': 'minecraft', 'minecraft': 'minecraft', 'mc': 'minecraft', 'MC': 'minecraft'
   };
 
-  console.log(`🎨 渲染 ${game} | 数据量: ${modsData.length}`);
-  console.log('📦 所有mod数据:', modsData);
+  console.log(`渲染 ${game} | 数据量: ${modsData.length}`);
+  console.log('所有mod数据:', modsData);
 
   if(!modsData?.length) {
     grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;opacity:0.6;">📡 暂无数据</p>`;
@@ -147,7 +153,7 @@ function renderGamePage(game) {
   }
 
   const target = String(game).trim().toLowerCase();
-  console.log('🎯 目标分类:', target);
+  console.log('目标分类:', target);
   
   const list = modsData.filter(m => {
     const raw = String(m.game || '').trim();
@@ -156,11 +162,11 @@ function renderGamePage(game) {
     return mapped === target;
   });
   
-  console.log('✅ 筛选结果:', list);
+  console.log('筛选结果:', list);
 
   if(!list.length) {
     const allCats = [...new Set(modsData.map(m => m.game))].join(', ');
-    setStatus(`🔍 分类不匹配: 页面="${game}" | 仓库="${allCats}"`, '#ff9f43');
+    setStatus(`分类不匹配: 页面="${game}" | 仓库="${allCats}"`, '#ff9f43');
     grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;opacity:0.6;">当前分类无 Mod</p>`;
     return;
   }
@@ -173,18 +179,69 @@ function renderGamePage(game) {
     const iconUrl = m.icon.startsWith('http') ? m.icon : baseUrl + m.icon;
     const fileUrl = m.file.startsWith('http') ? m.file : baseUrl + m.file;
     const sourceUrl = m.source && !m.source.startsWith('http') ? baseUrl + m.source : m.source;
+    const tagsHtml = (m.tags || []).map(t => `<span class="mod-tag">${t}</span>`).join('');
     
     return `
-    <div class="mod-card">
+    <div class="mod-card" onclick="showModDetail('${m.id}')" style="cursor:pointer;">
       <img src="${iconUrl}" class="mod-img" onerror="this.style.background='#333'">
       <div class="mod-header"><h3 class="mod-name">${m.name}</h3><span class="mod-ver">v${m.version}</span></div>
+      ${tagsHtml ? `<div class="mod-tags">${tagsHtml}</div>` : ''}
       <p class="mod-desc">${m.desc || T[state.lang].no_desc}</p>
       <div class="mod-actions">
-        <a href="${fileUrl}" download class="glass-btn">⬇️ 下载</a>
-        ${m.source ? `<a href="${sourceUrl}" download class="glass-btn" style="opacity:0.7">📦 源码</a>` : ''}
+        <a href="${fileUrl}" download class="glass-btn" onclick="event.stopPropagation()">${T[state.lang].down}</a>
+        ${m.source ? `<a href="${sourceUrl}" download class="glass-btn" style="opacity:0.7" onclick="event.stopPropagation()">${T[state.lang].source}</a>` : ''}
+        <button class="glass-btn" style="opacity:0.8" onclick="event.stopPropagation();showModDetail('${m.id}')">${T[state.lang].detail}</button>
       </div>
     </div>`;
   }).join('');
+}
+
+// 📄 显示 Mod 详情页
+function showModDetail(id) {
+  const m = modsData.find(x => x.id === id);
+  if (!m) return;
+  
+  const baseUrl = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/`;
+  const fileUrl = m.file.startsWith('http') ? m.file : baseUrl + m.file;
+  const sourceUrl = m.source && !m.source.startsWith('http') ? baseUrl + m.source : m.source;
+  
+  const tagsHtml = (m.tags || []).map(t => `<span class="modal-tag">${t}</span>`).join('');
+  
+  let screenshotsHtml = '';
+  if (m.screenshots && m.screenshots.length > 0) {
+    const ssItems = m.screenshots.map(s => {
+      const url = s.startsWith('http') ? s : baseUrl + s;
+      const isVideo = s.match(/\.(mp4|webm|ogg)$/i);
+      if (isVideo) {
+        return `<video class="screenshot-video" controls src="${url}"></video>`;
+      } else {
+        return `<img class="screenshot-item" src="${url}" onclick="window.open('${url}','_blank')">`;
+      }
+    }).join('');
+    screenshotsHtml = `
+      <h4 class="modal-screenshots-title">${T[state.lang].screenshots}</h4>
+      <div class="screenshot-grid">${ssItems}</div>
+    `;
+  }
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  modal.innerHTML = `
+    <div class="modal-content">
+      <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      <h2 class="modal-title">${m.name}</h2>
+      <div class="modal-version"><span class="mod-ver">v${m.version}</span></div>
+      ${tagsHtml ? `<div class="modal-tags">${tagsHtml}</div>` : ''}
+      <div class="modal-desc">${m.desc || T[state.lang].no_desc}</div>
+      ${screenshotsHtml}
+      <div class="modal-actions">
+        <a href="${fileUrl}" download class="glass-btn">${T[state.lang].down}</a>
+        ${m.source ? `<a href="${sourceUrl}" download class="glass-btn" style="opacity:0.8">${T[state.lang].source}</a>` : ''}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
 
 // 🔑 后台逻辑 (保持原样，已验证可用)
@@ -202,25 +259,25 @@ function saveToken() {
   const t=document.getElementById('gh-token').value.trim();
   const rememberToken = document.getElementById('remember-token')?.checked;
   
-  console.log('💾 尝试保存 Token:', t.substring(0, 20) + '...');
-  console.log('💾 记住 Token:', rememberToken ? '是' : '否');
+  console.log('尝试保存 Token:', t.substring(0, 20) + '...');
+  console.log('记住 Token:', rememberToken ? '是' : '否');
   
   if(t.startsWith('github_pat_')) { 
     const encrypted = encode(t);
     if(rememberToken) {
       localStorage.setItem('gh_token_enc', encrypted); 
-      console.log('✅ Token 已加密保存到 localStorage');
+      console.log('Token 已加密保存到 localStorage');
     } else {
       // 不记住，只保存在内存中
       sessionStorage.setItem('gh_token_session_enc', encrypted);
-      console.log('✅ Token 仅加密保存到会话（关闭浏览器后失效）');
+      console.log('Token 仅加密保存到会话（关闭浏览器后失效）');
     }
     state.ghToken=t; 
-    document.getElementById('token-status').textContent='✅ 已保存'; 
+    document.getElementById('token-status').textContent='已保存';
     document.getElementById('token-config').style.display='none'; 
     document.getElementById('auth-wrap').style.display='block'; 
   } else {
-    console.log('❌ Token 格式错误');
+    console.log('Token 格式错误');
     alert('Token 格式错误');
   }
 }
@@ -229,16 +286,16 @@ function doLogin() {
   const pass = document.getElementById('admin-pass').value;
   const rememberPass = document.getElementById('remember-pass')?.checked;
   
-  console.log('🔐 尝试登录 | 记住密码:', rememberPass ? '是' : '否');
+  console.log('尝试登录 | 记住密码:', rememberPass ? '是' : '否');
   
   if(pass==='admin123') {
     state.auth=true;
     if(rememberPass) {
       localStorage.setItem('mol_admin','1');
-      console.log('✅ 登录状态已保存');
+      console.log('登录状态已保存');
     } else {
       sessionStorage.setItem('mol_admin_session','1');
-      console.log('✅ 登录状态仅保存到会话');
+      console.log('登录状态仅保存到会话');
     }
     initAdmin();
   } else {
@@ -269,7 +326,7 @@ function initAdmin() {
     // 已有 Token，隐藏输入框，显示状态
     if(tokenConfig) {
       tokenConfig.style.display = 'none';
-      if(tokenStatus) tokenStatus.textContent = '✅ Token 已加载';
+      if(tokenStatus) tokenStatus.textContent = 'Token 已加载';
     }
   } else {
     // 没有 Token，显示输入框
@@ -280,6 +337,7 @@ function initAdmin() {
     w.style.display='block';
     if(authWrap) authWrap.style.display='none';
     switchTab('upload');
+    renderPresetTags(); // 初始化预制标签
   } else {
     w.style.display='none';
     if(authWrap) authWrap.style.display='block';
@@ -311,8 +369,140 @@ function loadModForUpdate(id) {
   document.getElementById('u-lbl-src').textContent=m.source?`当前: ${m.source.split('/').pop()}`:'无';
   f.style.opacity='1';f.style.pointerEvents='auto';b.disabled=false;state.mode='update';
 }
-function previewFile(i,l) { const lb=document.getElementById(l); lb.textContent=i.files?.length?`✅ ${i.files.length} 个`:'不替换'; }
-function resetForm() { document.getElementById('mod-form').reset(); document.querySelectorAll('[id^=lbl-]').forEach(l=>l.textContent='选择文件'); }
+function previewFile(i,l) { const lb=document.getElementById(l); lb.textContent=i.files?.length?` ${i.files.length} 个`:'不替换'; }
+function resetForm() { 
+  document.getElementById('mod-form').reset(); 
+  document.querySelectorAll('[id^=lbl-]').forEach(l=>l.textContent='选择文件');
+  document.getElementById('screenshot-preview').innerHTML = '';
+  document.getElementById('selected-tags').innerHTML = '';
+  window._selectedTags = [];
+  renderPresetTags();
+}
+
+// 🖼️ 预览截图
+let _screenshotFiles = [];
+function previewScreenshots(input) {
+  const preview = document.getElementById('screenshot-preview');
+  const lbl = document.getElementById('lbl-screenshots');
+  
+  if (input.files && input.files.length > 0) {
+    const newFiles = Array.from(input.files);
+    const totalFiles = _screenshotFiles.length + newFiles.length;
+    
+    if (totalFiles > 8) {
+      alert('最多只能上传8个预览文件！');
+      input.value = '';
+      return;
+    }
+    
+    _screenshotFiles = _screenshotFiles.concat(newFiles);
+    lbl.textContent = `已选择 ${_screenshotFiles.length} 个文件`;
+    
+    preview.innerHTML = '';
+    _screenshotFiles.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const div = document.createElement('div');
+        div.style.position = 'relative';
+        div.style.display = 'inline-block';
+        
+        if (file.type.startsWith('video/')) {
+          div.innerHTML = `
+            <video class="screenshot-thumb" src="${e.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;"></video>
+            <button class="screenshot-remove" onclick="removeScreenshot(${index})">✕</button>
+          `;
+        } else {
+          div.innerHTML = `
+            <img class="screenshot-thumb" src="${e.target.result}">
+            <button class="screenshot-remove" onclick="removeScreenshot(${index})">✕</button>
+          `;
+        }
+        preview.appendChild(div);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+function removeScreenshot(index) {
+  _screenshotFiles.splice(index, 1);
+  const input = document.getElementById('f-screenshots');
+  const lbl = document.getElementById('lbl-screenshots');
+  lbl.textContent = _screenshotFiles.length > 0 ? `已选择 ${_screenshotFiles.length} 个文件` : '选择文件';
+  
+  const preview = document.getElementById('screenshot-preview');
+  preview.innerHTML = '';
+  _screenshotFiles.forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const div = document.createElement('div');
+      div.style.position = 'relative';
+      div.style.display = 'inline-block';
+      if (file.type.startsWith('video/')) {
+        div.innerHTML = `<video class="screenshot-thumb" src="${e.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;"></video><button class="screenshot-remove" onclick="removeScreenshot(${i})">✕</button>`;
+      } else {
+        div.innerHTML = `<img class="screenshot-thumb" src="${e.target.result}"><button class="screenshot-remove" onclick="removeScreenshot(${i})">✕</button>`;
+      }
+      preview.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// 🏷️ 标签管理
+let _selectedTags = [];
+
+function renderPresetTags() {
+  const container = document.getElementById('preset-tags');
+  if (!container) return;
+  
+  const tags = PRESET_TAGS[state.lang] || PRESET_TAGS.zh;
+  container.innerHTML = tags.map(tag => 
+    `<div class="tag-option ${_selectedTags.includes(tag) ? 'selected' : ''}" onclick="toggleTag('${tag}')">${tag}</div>`
+  ).join('');
+}
+
+function toggleTag(tag) {
+  const index = _selectedTags.indexOf(tag);
+  if (index > -1) {
+    _selectedTags.splice(index, 1);
+  } else {
+    _selectedTags.push(tag);
+  }
+  renderPresetTags();
+  renderSelectedTags();
+}
+
+function addManualTag() {
+  const input = document.getElementById('manual-tag');
+  const tag = input.value.trim();
+  
+  if (!tag) return;
+  if (_selectedTags.includes(tag)) {
+    alert('标签已存在！');
+    return;
+  }
+  
+  _selectedTags.push(tag);
+  input.value = '';
+  renderSelectedTags();
+  renderPresetTags();
+}
+
+function removeTag(tag) {
+  _selectedTags = _selectedTags.filter(t => t !== tag);
+  renderSelectedTags();
+  renderPresetTags();
+}
+
+function renderSelectedTags() {
+  const container = document.getElementById('selected-tags');
+  if (!container) return;
+  
+  container.innerHTML = _selectedTags.map(tag => 
+    `<div class="selected-tag">${tag}<button onclick="removeTag('${tag}')">✕</button></div>`
+  ).join('');
+}
 
 async function handleFormSubmit(e) {
   e.preventDefault();
@@ -342,8 +532,21 @@ async function handleFormSubmit(e) {
     } else {
       const sf=name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'_');
       const p={icon:`mods/${sf}_${ver}_ic.${iF.name.split('.').pop()}`,mod:`mods/${sf}_${ver}.${mF.name.split('.').pop()}`,src:sF?`mods/${sf}_${ver}_src.${sF.name.split('.').pop()}`:null};
+      
+      // 上传预览图
+      const screenshotPaths = [];
+      for (let i = 0; i < _screenshotFiles.length; i++) {
+        const ssFile = _screenshotFiles[i];
+        const ext = ssFile.name.split('.').pop();
+        const ssPath = `mods/${sf}_${ver}_ss${i+1}.${ext}`;
+        const ssB64 = await b64(ssFile);
+        await ghPut(ssPath, ssB64, `Add screenshot ${i+1}`);
+        screenshotPaths.push(ssPath);
+      }
+      
       await Promise.all([ghPut(p.icon,iB,'Add ic'),ghPut(p.mod,mB,'Add mod'),sB?ghPut(p.src,sB,'Add src'):null]);
-      tgt={id:Date.now().toString(),name,game:cat,version:ver,icon:p.icon,file:p.mod,source:p.src,desc,screenshots:[]}; jc.push(tgt);
+      tgt={id:Date.now().toString(),name,game:cat,version:ver,icon:p.icon,file:p.mod,source:p.src,desc,tags:[..._selectedTags],screenshots:screenshotPaths}; 
+      jc.push(tgt);
     }
 
     await ghPut('mods.json',utf8ToBase64(JSON.stringify(jc,null,2)),`${state.mode==='update'?'Upd':'Add'}: ${name}`);
@@ -369,8 +572,8 @@ async function deleteMod(id) {
         });
       }} catch(e) {}
     }
-    modsData = modsData.filter(x => x.id !== id); loadAdminList(); renderCurrentPage(); alert('✅ 删除成功');
-  } catch(e) { alert('❌ 失败: ' + e.message); } finally { state.isBusy = false; }
+    modsData = modsData.filter(x => x.id !== id); loadAdminList(); renderCurrentPage(); alert('删除成功');
+  } catch(e) { alert('失败: ' + e.message); } finally { state.isBusy = false; }
 }
 
 async function ghGet(p) {

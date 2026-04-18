@@ -23,7 +23,7 @@
 
   <!-- 🔑 Token 配置区 -->
   <div id="token-config-inline" style="text-align:center;padding:15px;background:rgba(0,0,0,0.3);border-radius:10px;margin-bottom:20px;">
-    <p style="color:#ff9f43;font-size:0.9rem;margin-bottom:10px;">🔑 需要 GitHub Token 才能查看 Mod</p>
+    <p style="color:#ff9f43;font-size:0.9rem;margin-bottom:10px;">需要 GitHub Token 才能查看 Mod</p>
     <input type="password" id="inline-gh-token" placeholder="粘贴 github_pat_..." style="padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;width:300px;margin-right:10px;">
     <label style="display:inline-flex;align-items:center;color:#fff;font-size:0.85rem;margin-right:10px;cursor:pointer;" onclick="preventLabelJump(event)">
       <input type="checkbox" id="inline-remember-token" checked style="margin-right:5px;width:auto;"> 记住我
@@ -60,7 +60,7 @@
       }
       state.ghToken = t;
       document.getElementById('token-config-inline').style.display = 'none';
-      setStatus('✅ Token 已保存，重新加载中...', '#4ade80');
+      setStatus('Token 已保存，重新加载中...', '#4ade80');
       setTimeout(() => location.reload(), 1000);
     } else {
       alert('Token 格式错误，必须以 github_pat_ 开头');
@@ -70,7 +70,7 @@
     if(!state.ghToken) {
       // 没有 Token，显示输入框
       document.getElementById('token-config-inline').style.display = 'block';
-      setStatus('⚠️ 请先输入 GitHub Token', '#ff9f43');
+      setStatus('⚠请先输入 GitHub Token', '#ff9f43');
     } else {
       // 已有 Token，隐藏输入框，直接渲染
       document.getElementById('token-config-inline').style.display = 'none';
