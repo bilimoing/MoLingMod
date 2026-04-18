@@ -1,0 +1,13 @@
+[
+  {
+    "id": "1776513728588",
+    "name": "Worst Game",
+    "game": "terraria",
+    "version": "0.0.0.1",
+    "icon": "mods/Worst_Game_0.0.0.1_icon.png",
+    "file": "mods/Worst_Game_0.0.0.1.tmod",
+    "source": "mods/Worst_Game_0.0.0.1_src.zip",
+    "desc": "1.4.5 Worst of Terraria of the Reset Version",
+    "screenshots": []
+  }
+]
