@@ -173,7 +173,6 @@ function resetForm() {
   document.querySelectorAll('[id^=lbl-]').forEach(l=>l.textContent='选择文件');
 }
 
-// 🚀 核心：提交处理 (上传/更新分离)
 async function handleFormSubmit(e) {
   e.preventDefault();
   if(state.isBusy) return alert('操作中，请稍候...');
@@ -187,7 +186,6 @@ async function handleFormSubmit(e) {
   btn.disabled = true; btn.textContent = '⏳ 处理中...';
 
   try {
-    // 获取表单数据
     const name = state.mode==='update' ? document.getElementById('u-name').value : document.getElementById('f-name').value;
     const cat = state.mode==='update' ? document.getElementById('u-cat').value : document.getElementById('f-cat').value;
     const ver = state.mode==='update' ? document.getElementById('u-ver').value : document.getElementById('f-ver').value;
@@ -197,7 +195,6 @@ async function handleFormSubmit(e) {
     const modFile = document.getElementById(state.mode==='update'?'u-mod':'f-mod').files[0];
     const srcFile = document.getElementById(state.mode==='update'?'u-src':'f-src').files[0];
 
-    // 上传模式必须传文件，更新模式可选
     if(state.mode==='upload' && (!iconFile || !modFile)) throw new Error("上传必须选择图标和Mod文件");
 
     const b64 = f => f ? new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(f); }) : Promise.resolve(null);
@@ -210,37 +207,37 @@ async function handleFormSubmit(e) {
     try { const raw = await ghGet('mods.json'); jsonContent = JSON.parse(base64ToUtf8(raw.content)); } catch(e) {}
 
     if(state.mode === 'update') {
-      // 🔹 更新逻辑
       const oldIdx = jsonContent.findIndex(m => m.id === state.editingId);
       if(oldIdx === -1) throw new Error('找不到原 Mod 记录');
       targetMod = jsonContent[oldIdx];
 
-      // 如果选了新文件则上传覆盖 (PUT 自动覆盖)
       if(iconB64) await ghPut(targetMod.icon, iconB64, `Update icon: ${name}`);
       if(modB64) await ghPut(targetMod.file, modB64, `Update mod: ${name} v${ver}`);
       if(srcB64) await ghPut(targetMod.source, srcB64, `Update source: ${name}`);
 
-      // 更新 JSON 数据
       targetMod.name = name; targetMod.game = cat; targetMod.version = ver; targetMod.desc = desc;
       jsonContent[oldIdx] = targetMod;
     } else {
-      // 🔹 上传逻辑
       const safeName = name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
       const paths = {
         icon: `mods/${safeName}_${ver}_icon.${iconFile.name.split('.').pop()}`,
         mod: `mods/${safeName}_${ver}.${modFile.name.split('.').pop()}`,
         source: srcFile ? `mods/${safeName}_${ver}_src.${srcFile.name.split('.').pop()}` : null
       };
-      await Promise.all([ghPut(paths.icon, iconB64), ghPut(paths.mod, modB64), srcB64?ghPut(paths.source, srcB64):null]);
+
+      // ✅ 修复：所有 ghPut 都传 message
+      await Promise.all([
+        ghPut(paths.icon, iconB64, `Add icon: ${name}`),
+        ghPut(paths.mod, modB64, `Add mod: ${name} v${ver}`),
+        srcB64 ? ghPut(paths.source, srcB64, `Add source: ${name}`) : Promise.resolve()
+      ]);
 
       targetMod = { id: Date.now().toString(), name, game: cat, version: ver, icon: paths.icon, file: paths.mod, source: paths.source, desc, screenshots: [] };
       jsonContent.push(targetMod);
     }
 
-    // 统一保存 JSON
     await ghPut('mods.json', utf8ToBase64(JSON.stringify(jsonContent, null, 2)), `${state.mode==='update'?'Update':'Add'} Mod: ${name} v${ver}`);
 
-    // ✅ 即时同步内存与 UI
     if(state.mode === 'update') {
       const idx = modsData.findIndex(m => m.id === state.editingId);
       if(idx !== -1) modsData[idx] = targetMod;
