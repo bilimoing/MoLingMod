@@ -294,7 +294,9 @@ async function deleteMod(id) {
 
 // 🛡️ GitHub API (防冲突重试)
 async function ghGet(path) {
-  const res = await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}?t=${Date.now()}`, {
+  // 🔑 添加 &ref=master 参数，强制读取 master 分支
+  const url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}?ref=${state.branch}&t=${Date.now()}`;
+  const res = await fetch(url, {
     headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
   });
   if(!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
@@ -311,19 +313,15 @@ async function ghPut(path, base64Content, message = 'Update file', maxRetries = 
     // 🔑 确保 message 永远有值
     const commitMessage = message || `Update ${path}`;
 
-    const res = await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${state.ghToken}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'X-GitHub-Api-Version': '2022-11-28'
-      },
-      body: JSON.stringify({
-        message: commitMessage,  // 🔑 确保这里有值
-        content: base64Content,
-        ...(sha ? {sha} : {})
-      })
-    });
+    async function ghGet(path) {
+      // 🔑 添加 &ref=master 参数，强制读取 master 分支
+      const url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}?ref=${state.branch}&t=${Date.now()}`;
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if(!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+      return await res.json();
+    }
 
     if(res.ok) return await res.json();
 
