@@ -20,6 +20,9 @@
     <h3>🔑 GitHub API Token</h3>
     <p class="hint">用于自动上传/更新文件并同步 mods.json</p>
     <input type="password" id="gh-token" class="glass-input" placeholder="粘贴 github_pat_...">
+    <label style="display:flex;align-items:center;margin:10px 0;color:#fff;font-size:0.9rem;cursor:pointer;" onclick="preventLabelJump(event)">
+      <input type="checkbox" id="remember-token" checked style="margin-right:8px;width:auto;"> 记住 Token
+    </label>
     <button class="glass-btn full" onclick="saveToken()">保存 Token</button>
     <p id="token-status" style="margin-top:8px;font-size:0.8rem;color:#4ade80;"></p>
   </div>
@@ -28,6 +31,9 @@
     <h2 data-i18n="login_t">管理员登录</h2>
     <p class="hint" data-i18n="hint">默认密码: admin123</p>
     <input type="password" id="admin-pass" class="glass-input" placeholder="输入密码">
+    <label style="display:flex;align-items:center;margin:10px 0;color:#fff;font-size:0.9rem;cursor:pointer;" onclick="preventLabelJump(event)">
+      <input type="checkbox" id="remember-pass" checked style="margin-right:8px;width:auto;"> 记住密码
+    </label>
     <button class="glass-btn full" onclick="doLogin()" data-i18n="login_b">登录</button>
     <button class="text-btn" onclick="location.href='index.html'" data-i18n="cancel">取消</button>
   </div>
@@ -56,17 +62,17 @@
     <div id="tab-update" class="tab-panel">
       <div class="fg" style="margin-bottom:20px;">
         <label>选择要更新的 Mod</label>
-        <select id="update-select" class="glass-select" onchange="loadModForUpdate(this.value)"><option value="">-- 请选择 --</option></select>
+        <label for="update-select"></label><select id="update-select" class="glass-select" onchange="loadModForUpdate(this.value)"><option value="">-- 请选择 --</option></select>
       </div>
       <form id="update-form" onsubmit="handleFormSubmit(event)" class="glass-card" style="opacity:0.6;pointer-events:none;">
         <input type="hidden" id="edit-id">
-        <div class="fg"><label>Mod名称</label><input id="u-name" class="glass-input" required></div>
-        <div class="fg"><label>游戏分类</label><select id="u-cat" class="glass-select" required><option value="terraria">泰拉瑞亚</option><option value="stardew">星露谷物语</option><option value="minecraft">我的世界</option></select></div>
-        <div class="fg"><label>新版本号</label><input id="u-ver" class="glass-input" placeholder="2.0.0" required></div>
+        <div class="fg"><label>Mod名称</label><label for="u-name"></label><input id="u-name" class="glass-input" required></div>
+        <div class="fg"><label>游戏分类</label><label for="u-cat"></label><select id="u-cat" class="glass-select" required><option value="terraria">泰拉瑞亚</option><option value="stardew">星露谷物语</option><option value="minecraft">我的世界</option></select></div>
+        <div class="fg"><label>新版本号</label><label for="u-ver"></label><input id="u-ver" class="glass-input" placeholder="2.0.0" required></div>
         <div class="fg"><label>替换图标 (留空保留)</label><label class="glass-file-btn"><span id="u-lbl-icon">不替换</span><input type="file" id="u-icon" accept="image/*" onchange="previewFile(this,'u-lbl-icon')"></label></div>
         <div class="fg"><label>替换Mod文件 (留空保留)</label><label class="glass-file-btn"><span id="u-lbl-mod">不替换</span><input type="file" id="u-mod" onchange="previewFile(this,'u-lbl-mod')"></label></div>
         <div class="fg"><label>替换源代码 (留空保留)</label><label class="glass-file-btn"><span id="u-lbl-src">不替换</span><input type="file" id="u-src" onchange="previewFile(this,'u-lbl-src')"></label></div>
-        <div class="fg full"><label>更新描述</label><textarea id="u-desc" class="glass-input" rows="4" required></textarea></div>
+        <div class="fg full"><label>更新描述</label><label for="u-desc"></label><textarea id="u-desc" class="glass-input" rows="4" required></textarea></div>
         <button type="submit" id="update-btn" class="glass-btn full" disabled>🔄 提交更新</button>
       </form>
     </div>

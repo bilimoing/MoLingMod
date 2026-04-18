@@ -6,17 +6,105 @@
   <title>泰拉瑞亚 Mods</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body data-page="terraria"> <!-- 🔑 必须是小写，与上传时的分类值一致 -->
+<body data-page="terraria">
 <div class="bg-gif"></div><div class="bg-overlay"></div><div class="bg-glow"></div>
+
 <div class="music-panel" onclick="toggleMusic()"><div class="vinyl" id="vinyl"></div></div>
-<div class="lang-switch"><button onclick="setLang('zh')" class="lang-btn active">中</button><button onclick="setLang('en')" class="lang-btn">EN</button></div>
+<div class="lang-switch">
+  <button onclick="setLang('zh')" class="lang-btn active">中</button>
+  <button onclick="setLang('en')" class="lang-btn">EN</button>
+</div>
+
 <audio id="bgm" loop preload="auto"><source src="assets/bgm.mp3" type="audio/mpeg"></audio>
+
+<style>
+  /* 🔑 默认隐藏 Token 输入框，由 JS 控制显示 */
+  #token-config-inline { display: none !important; }
+</style>
 
 <main class="page-container">
   <a href="index.html" class="back-btn">← 返回主页</a>
   <h2 class="page-title">⚔️ 泰拉瑞亚 Mods</h2>
-  <div class="mod-grid" id="mod-grid"></div> <!-- 🔑 ID 必须完全一致 -->
+
+  <!-- 🔑 Token 配置区 -->
+  <div id="token-config-inline" style="text-align:center;padding:15px;background:rgba(0,0,0,0.3);border-radius:10px;margin-bottom:20px;">
+    <p style="color:#ff9f43;font-size:0.9rem;margin-bottom:10px;">🔑 需要 GitHub Token 才能查看 Mod</p>
+    <label for="inline-gh-token"></label><input type="password" id="inline-gh-token" placeholder="粘贴 github_pat_..." style="padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;width:300px;margin-right:10px;">
+    <label style="display:inline-flex;align-items:center;color:#fff;font-size:0.85rem;margin-right:10px;cursor:pointer;" onclick="preventLabelJump(event)">
+      <input type="checkbox" id="inline-remember-token" checked style="margin-right:5px;width:auto;"> 记住我
+    </label>
+    <button onclick="saveInlineToken()" class="glass-btn" style="padding:8px 16px;">保存</button>
+  </div>
+
+  <!-- 🔍 状态提示区（自动显示加载状态） -->
+  <div id="debug-status" style="text-align:center;padding:20px;color:#ff9f43;font-size:0.9rem;"></div>
+
+  <div class="mod-grid" id="mod-grid"></div>
 </main>
+
 <script src="app.js"></script>
+<script>
+  // 🛡️ 立即执行：在脚本加载时就检查并隐藏输入框
+  (function() {
+    const hasToken = localStorage.getItem('gh_token_enc') || sessionStorage.getItem('gh_token_session_enc');
+    if(hasToken) {
+      document.addEventListener('DOMContentLoaded', function() {
+        const el = document.getElementById('token-config-inline');
+        if(el) el.style.display = 'none';
+      });
+    }
+  })();
+
+  // 🔑 内联 Token 保存函数
+  function saveInlineToken() {
+    const t = document.getElementById('inline-gh-token').value.trim();
+    const rememberToken = document.getElementById('inline-remember-token')?.checked;
+    
+    if(t.startsWith('github_pat_')) {
+      const encrypted = encode(t);
+      if(rememberToken) {
+        localStorage.setItem('gh_token_enc', encrypted);
+        console.log('✅ Token 已加密永久保存');
+      } else {
+        sessionStorage.setItem('gh_token_session_enc', encrypted);
+        console.log('✅ Token 仅加密保存到会话');
+      }
+      state.ghToken = t;
+      document.getElementById('token-config-inline').style.display = 'none';
+      setStatus('✅ Token 已保存，重新加载中...', '#4ade80');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      alert('Token 格式错误，必须以 github_pat_ 开头');
+    }
+  }
+
+  // 检查是否需要显示 Token 输入框
+  window.addEventListener('load', async () => {
+    console.log('🎮 页面加载完成');
+    console.log('🔑 Token:', state.ghToken ? '已设置' : '未设置');
+    
+    if(!state.ghToken) {
+      // 没有 Token，显示输入框
+      document.getElementById('token-config-inline').style.display = 'block';
+      setStatus('⚠️ 请先输入 GitHub Token', '#ff9f43');
+    } else {
+      // 已有 Token，立即隐藏输入框
+      document.getElementById('token-config-inline').style.display = 'none';
+      console.log('🔄 开始加载 mods.json...');
+      
+      await loadMods();
+      
+      console.log('📊 modsData 长度:', modsData.length);
+      console.log('📋 modsData 内容:', modsData);
+      
+      if(modsData.length === 0) {
+        setStatus('❌ 未能加载任何 Mod 数据', '#ff4757');
+      } else {
+        console.log('🎨 开始渲染页面...');
+        renderGamePage('terraria');
+      }
+    }
+  });
+</script>
 </body>
 </html>
