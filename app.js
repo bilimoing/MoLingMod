@@ -304,16 +304,30 @@ async function ghGet(path) {
   return await res.json();
 }
 
-async function ghPut(path, base64Content, message, maxRetries = 3) {
+async function ghPut(path, base64Content, message = 'Update file', maxRetries = 3) {
   if(!base64Content) return; // 无内容不上传
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     let sha = null;
     try { sha = (await ghGet(path)).sha; } catch(e) {}
 
+    // 🔑 确保 message 永远有值
+    const commitMessage = message || `Update ${path}`;
+
     const res = await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${path}`, {
-      method: 'PUT', headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
-      body: JSON.stringify({ message, content: base64Content, ...(sha ? {sha} : {}) })
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${state.ghToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({
+        message: commitMessage,  // 🔑 确保这里有值
+        content: base64Content,
+        ...(sha ? {sha} : {})
+      })
     });
+
     if(res.ok) return await res.json();
 
     const err = await res.json();
