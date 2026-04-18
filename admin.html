@@ -7,56 +7,77 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="admin">
-  <div class="bg-gif"></div><div class="bg-overlay"></div><div class="bg-glow"></div>
-  <div class="music-panel" onclick="toggleMusic()"><div class="vinyl" id="vinyl"></div></div>
-  <div class="lang-switch"><button onclick="setLang('zh')" class="lang-btn active">中</button><button onclick="setLang('en')" class="lang-btn">EN</button></div>
-  <audio id="bgm" loop preload="auto"><source src="assets/bgm.mp3" type="audio/mpeg"></audio>
+<div class="bg-gif"></div><div class="bg-overlay"></div><div class="bg-glow"></div>
+<div class="music-panel" onclick="toggleMusic()"><div class="vinyl" id="vinyl"></div></div>
+<div class="lang-switch"><button onclick="setLang('zh')" class="lang-btn active">中</button><button onclick="setLang('en')" class="lang-btn">EN</button></div>
+<audio id="bgm" loop preload="auto"><source src="assets/bgm.mp3" type="audio/mpeg"></audio>
 
-  <main class="page-container">
-    <a href="index.html" class="back-btn">← <span data-i18n="back">返回主页</span></a>
-    <h2 class="page-title" data-i18n="admin_t">🔧 Mod 管理</h2>
+<main class="page-container">
+  <a href="index.html" class="back-btn">← <span data-i18n="back">返回主页</span></a>
+  <h2 class="page-title" data-i18n="admin_t">🔧 Mod 管理</h2>
 
-    <!-- 1. Token 配置 -->
-    <div id="token-config" class="auth-box" style="margin-bottom:20px;">
-      <h3>🔑 GitHub API Token</h3>
-      <p class="hint">用于自动上传文件并更新 mods.json</p>
-      <label for="gh-token"></label><input type="password" id="gh-token" class="glass-input" placeholder="粘贴 github_pat_...">
-      <button class="glass-btn full" onclick="saveToken()">保存 Token</button>
-      <p id="token-status" style="margin-top:8px;font-size:0.8rem;color:#4ade80;"></p>
+  <div id="token-config" class="auth-box" style="margin-bottom:20px;">
+    <h3>🔑 GitHub API Token</h3>
+    <p class="hint">用于自动上传/更新文件并同步 mods.json</p>
+    <label for="gh-token"></label><input type="password" id="gh-token" class="glass-input" placeholder="粘贴 github_pat_...">
+    <button class="glass-btn full" onclick="saveToken()">保存 Token</button>
+    <p id="token-status" style="margin-top:8px;font-size:0.8rem;color:#4ade80;"></p>
+  </div>
+
+  <div id="auth-wrap" class="auth-box" style="display:none;">
+    <h2 data-i18n="login_t">管理员登录</h2>
+    <p class="hint" data-i18n="hint">默认密码: admin123</p>
+    <label for="admin-pass"></label><input type="password" id="admin-pass" class="glass-input" placeholder="输入密码">
+    <button class="glass-btn full" onclick="doLogin()" data-i18n="login_b">登录</button>
+    <button class="text-btn" onclick="location.href='index.html'" data-i18n="cancel">取消</button>
+  </div>
+
+  <div id="admin-panel" style="display:none;">
+    <div class="admin-tabs">
+      <button class="tab active" onclick="switchTab('upload')" id="tab-btn-upload" data-i18n="upload">📤 上传新 Mod</button>
+      <button class="tab" onclick="switchTab('update')" id="tab-btn-update" data-i18n="update">🔄 更新已有 Mod</button>
+      <button class="tab" onclick="switchTab('list')" data-i18n="manage">📋 管理列表</button>
+      <button class="tab" onclick="doLogout()" style="margin-left:auto;background:var(--dan);" data-i18n="logout">退出</button>
     </div>
 
-    <!-- 2. 登录/后台面板 -->
-    <div id="auth-wrap" class="auth-box" style="display:none;">
-      <h2 data-i18n="login_t">管理员登录</h2>
-      <p class="hint" data-i18n="hint">默认密码: admin123</p>
-      <label for="admin-pass"></label><input type="password" id="admin-pass" class="glass-input" placeholder="输入密码">
-      <button class="glass-btn full" onclick="doLogin()" data-i18n="login_b">登录</button>
-      <button class="text-btn" onclick="location.href='index.html'" data-i18n="cancel">取消</button>
+    <!-- 上传面板 -->
+    <div id="tab-upload" class="tab-panel active">
+      <form id="mod-form" onsubmit="handleFormSubmit(event)" class="glass-card">
+        <div class="fg"><label>Mod名称</label><label for="f-name"></label><input id="f-name" class="glass-input" required></div>
+        <div class="fg"><label>游戏分类</label><label for="f-cat"></label><select id="f-cat" class="glass-select" required><option value="terraria">泰拉瑞亚</option><option value="stardew">星露谷物语</option><option value="minecraft">我的世界</option></select></div>
+        <div class="fg"><label>版本号</label><label for="f-ver"></label><input id="f-ver" class="glass-input" placeholder="1.0.0" required></div>
+        <div class="fg"><label>图标</label><label class="glass-file-btn"><span id="lbl-icon">选择文件</span><input type="file" id="f-icon" accept="image/*" onchange="previewFile(this,'lbl-icon')"></label></div>
+        <div class="fg"><label>Mod文件</label><label class="glass-file-btn"><span id="lbl-mod">选择文件</span><input type="file" id="f-mod" onchange="previewFile(this,'lbl-mod')"></label></div>
+        <div class="fg"><label>源代码</label><label class="glass-file-btn"><span id="lbl-src">选择文件</span><input type="file" id="f-src" onchange="previewFile(this,'lbl-src')"></label></div>
+        <div class="fg full"><label>描述</label><label for="f-desc"></label><textarea id="f-desc" class="glass-input" rows="4" required></textarea></div>
+        <button type="submit" id="submit-btn" class="glass-btn full">🚀 提交上传</button>
+      </form>
     </div>
 
-    <div id="admin-panel" style="display:none;">
-      <div class="admin-tabs">
-        <button class="tab active" onclick="switchTab('upload')" data-i18n="upload">上传/更新</button>
-        <button class="tab" onclick="switchTab('list')" data-i18n="manage">管理列表</button>
-        <button class="tab" onclick="doLogout()" style="margin-left:auto;background:var(--dan);" data-i18n="logout">退出</button>
+    <!-- 更新面板 -->
+    <div id="tab-update" class="tab-panel">
+      <div class="fg" style="margin-bottom:20px;">
+        <label>选择要更新的 Mod</label>
+        <select id="update-select" class="glass-select" onchange="loadModForUpdate(this.value)">
+          <option value="">-- 请选择 --</option>
+        </select>
       </div>
-
-      <div id="tab-upload" class="tab-panel active">
-        <form id="mod-form" onsubmit="handleUpload(event)" class="glass-card">
-          <div class="fg"><label data-i18n="name">Mod名称</label><label for="f-name"></label><input id="f-name" class="glass-input" required></div>
-          <div class="fg"><label data-i18n="cat">游戏分类</label><label for="f-cat"></label><select id="f-cat" class="glass-select" required><option value="terraria">泰拉瑞亚</option><option value="stardew">星露谷物语</option><option value="minecraft">我的世界</option></select></div>
-          <div class="fg"><label data-i18n="ver">版本号</label><label for="f-ver"></label><input id="f-ver" class="glass-input" placeholder="1.0.0" required></div>
-          <div class="fg"><label data-i18n="icon">图标</label><label class="glass-file-btn"><span id="lbl-icon" data-i18n="sel_file">选择文件</span><input type="file" id="f-icon" accept="image/*" onchange="previewFile(this,'lbl-icon')"></label></div>
-          <div class="fg"><label data-i18n="mod_file">Mod文件</label><label class="glass-file-btn"><span id="lbl-mod" data-i18n="sel_file">选择文件</span><input type="file" id="f-mod" onchange="previewFile(this,'lbl-mod')"></label></div>
-          <div class="fg"><label data-i18n="source_file">源文件</label><label class="glass-file-btn"><span id="lbl-src" data-i18n="sel_file">选择文件</span><input type="file" id="f-src" onchange="previewFile(this,'lbl-src')"></label></div>
-          <div class="fg full"><label data-i18n="desc">描述</label><label for="f-desc"></label><textarea id="f-desc" class="glass-input" rows="4" required></textarea></div>
-          <button type="submit" id="submit-btn" class="glass-btn full" data-i18n="submit_upload">提交上传</button>
-        </form>
-      </div>
-
-      <div id="tab-list" class="tab-panel"><div id="mod-list" class="list-wrap"></div></div>
+      <form id="update-form" onsubmit="handleFormSubmit(event)" class="glass-card" style="opacity:0.6;pointer-events:none;">
+        <input type="hidden" id="edit-id">
+        <div class="fg"><label>Mod名称</label><input id="u-name" class="glass-input" required></div>
+        <div class="fg"><label>游戏分类</label><select id="u-cat" class="glass-select" required><option value="terraria">泰拉瑞亚</option><option value="stardew">星露谷物语</option><option value="minecraft">我的世界</option></select></div>
+        <div class="fg"><label>新版本号</label><input id="u-ver" class="glass-input" placeholder="2.0.0" required></div>
+        <div class="fg"><label>替换图标 (留空保留原文件)</label><label class="glass-file-btn"><span id="u-lbl-icon">不替换</span><input type="file" id="u-icon" accept="image/*" onchange="previewFile(this,'u-lbl-icon')"></label></div>
+        <div class="fg"><label>替换Mod文件 (留空保留原文件)</label><label class="glass-file-btn"><span id="u-lbl-mod">不替换</span><input type="file" id="u-mod" onchange="previewFile(this,'u-lbl-mod')"></label></div>
+        <div class="fg"><label>替换源代码 (留空保留原文件)</label><label class="glass-file-btn"><span id="u-lbl-src">不替换</span><input type="file" id="u-src" onchange="previewFile(this,'u-lbl-src')"></label></div>
+        <div class="fg full"><label>更新描述</label><textarea id="u-desc" class="glass-input" rows="4" required></textarea></div>
+        <button type="submit" id="update-btn" class="glass-btn full" disabled>🔄 提交更新</button>
+      </form>
     </div>
-  </main>
-  <script src="app.js"></script>
+
+    <div id="tab-list" class="tab-panel"><div id="mod-list" class="list-wrap"></div></div>
+  </div>
+</main>
+<script src="app.js"></script>
 </body>
 </html>
