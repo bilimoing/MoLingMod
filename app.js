@@ -1,4 +1,4 @@
-// 🔧 你的仓库信息
+// 🔧 仓库配置
 const state = {
   lang: localStorage.getItem('lang') || 'zh',
   auth: !!localStorage.getItem('mol_admin'),
@@ -10,20 +10,23 @@ const state = {
 };
 
 const T = {
-  zh: { title:'末泠的Mod库', terraria:'泰拉瑞亚', stardew:'星露谷物语', minecraft:'我的世界', admin:'🔧 管理后台', back:'返回主页', login_t:'管理员登录', hint:'默认密码: admin123', login_b:'登录', cancel:'取消', logout:'退出', admin_t:'🔧 Mod 管理', upload:'📤 上传', update:'🔄 更新', manage:'📋 列表', name:'名称', cat:'分类', ver:'版本', icon:'图标', mod_file:'Mod文件', source_file:'源码', desc:'描述', submit_upload:'🚀 提交', submit_update:'🔄 更新', del:'删除', none:'📦 暂无Mod', down:'⬇️ 下载', success:'✅ 成功！', err:'❌ 失败', loading:'📡 加载中...', token_req:'请先保存 Token', del_confirm:'确定删除？', retrying:'⏳ 重试中...', please_select:'请先选择', no_desc: '暂无描述' },
-  en: { title:"Moling's Mods", terraria:'Terraria', stardew:'Stardew Valley', minecraft:'Minecraft', admin:'🔧 Admin', back:'Back', login_t:'Admin Login', hint:'Default: admin123', login_b:'Login', cancel:'Cancel', logout:'Logout', admin_t:'🔧 Mod Admin', upload:'📤 Upload', update:'🔄 Update', manage:'📋 List', name:'Name', cat:'Category', ver:'Version', icon:'Icon', mod_file:'Mod File', source_file:'Source', desc:'Description', submit_upload:'🚀 Submit', submit_update:'🔄 Update', del:'Delete', none:'📦 No mods', down:'⬇️ Download', success:'✅ Success!', err:'❌ Failed', loading:'📡 Loading...', token_req:'Save Token first', del_confirm:'Delete?', retrying:'⏳ Retrying...', please_select:'Select first', no_desc: 'No description' }
+  zh: { title:'末泠的Mod库', terraria:'泰拉瑞亚', stardew:'星露谷物语', minecraft:'我的世界', admin:'🔧 管理后台', back:'返回主页', login_t:'管理员登录', hint:'默认密码: admin123', login_b:'登录', cancel:'取消', logout:'退出', admin_t:'🔧 Mod 管理', upload:'📤 上传', update:'🔄 更新', manage:'📋 列表', name:'名称', cat:'分类', ver:'版本', icon:'图标', mod_file:'Mod文件', source_file:'源码', desc:'描述', submit_upload:'🚀 提交', submit_update:'🔄 更新', del:'删除', none:'📦 暂无Mod', down:'⬇️ 下载', success:'✅ 成功！', err:'❌ 失败', loading:'📡 加载中...', token_req:'请先保存 Token', del_confirm:'确定删除？', retrying:'⏳ 重试中...', please_select:'请先选择', no_desc: '暂无描述', debug_title: '🔍 调试面板', debug_load: '加载数据中...', debug_empty: '仓库无数据或网络错误', debug_mismatch: '分类不匹配，检查 mods.json 中的 game 字段' },
+  en: { title:"Moling's Mods", terraria:'Terraria', stardew:'Stardew Valley', minecraft:'Minecraft', admin:'🔧 Admin', back:'Back', login_t:'Admin Login', hint:'Default: admin123', login_b:'Login', cancel:'Cancel', logout:'Logout', admin_t:'🔧 Mod Admin', upload:'📤 Upload', update:'🔄 Update', manage:'📋 List', name:'Name', cat:'Category', ver:'Version', icon:'Icon', mod_file:'Mod File', source_file:'Source', desc:'Description', submit_upload:'🚀 Submit', submit_update:'🔄 Update', del:'Delete', none:'📦 No mods', down:'⬇️ Download', success:'✅ Success!', err:'❌ Failed', loading:'📡 Loading...', token_req:'Save Token first', del_confirm:'Delete?', retrying:'⏳ Retrying...', please_select:'Select first', no_desc: 'No description', debug_title: '🔍 Debug', debug_load: 'Loading...', debug_empty: 'Repo empty or network error', debug_mismatch: 'Category mismatch. Check game field in mods.json' }
 };
 
-const utf8ToBase64 = str => { const b=new TextEncoder().encode(str); let s=''; b.forEach(c=>s+=String.fromCharCode(c)); return btoa(s); };
-const base64ToUtf8 = b => new TextDecoder().decode(Uint8Array.from(atob(b), c=>c.charCodeAt(0)));
+// 🛡️ Base64 工具（安全处理中文）
+const utf8ToBase64 = str => btoa(new TextEncoder().encode(str).reduce((s,c)=>s+String.fromCharCode(c),''));
+const base64ToUtf8 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64), c=>c.charCodeAt(0)));
 
 document.addEventListener('DOMContentLoaded', async () => {
   applyLang(); initMusic();
   if(state.ghToken) document.getElementById('token-status').textContent = '✅ Token 已就绪';
-  console.log('🚀 初始化开始');
+
+  console.log('🚀 页面初始化');
   await loadMods();
   const page = document.body.dataset.page;
-  console.log('📄 当前页面:', page);
+  console.log('📄 识别页面:', page);
+
   if (['terraria','stardew','minecraft'].includes(page)) renderGamePage(page);
   if (page === 'admin') initAdmin();
 });
@@ -53,37 +56,85 @@ function toggleMusic() {
 window.addEventListener('beforeunload', ()=>{const b=document.getElementById('bgm');if(b){localStorage.setItem('music_time',b.currentTime);localStorage.setItem('music_playing',!b.paused?'true':'false');}});
 document.addEventListener('visibilitychange', ()=>{if(document.hidden){const b=document.getElementById('bgm');if(b)localStorage.setItem('music_playing',!b.paused?'true':'false');}});
 
+// 📦 数据加载（带完整调试）
 let modsData = [];
 async function loadMods() {
-  console.log('📡 加载 mods.json...');
   const grid = document.getElementById('mod-grid');
   if(grid) grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;opacity:0.6;">${T[state.lang].loading}</p>`;
+
   try {
-    const res = await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`);
-    if(res.status===404) { console.warn('⚠️ 无 mods.json'); modsData=[]; if(grid) grid.innerHTML=`<p style="grid-column:1/-1;text-align:center;opacity:0.6;">⚠️ 仓库无数据，请先去后台上传</p>`; return; }
-    if(res.ok) { const j=await res.json(); modsData=j.content?JSON.parse(base64ToUtf8(j.content)):[]; console.log(`✅ 加载 ${modsData.length} 个 Mod`); }
-    else { console.error('❌ 请求失败', res.status); modsData=[]; }
-  } catch(e) { console.error('❌ 异常', e); modsData=[]; if(grid) grid.innerHTML=`<p style="grid-column:1/-1;text-align:center;opacity:0.6;">❌ ${e.message}</p>`; }
+    const url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+    console.log('🔗 请求:', url);
+    const res = await fetch(url);
+
+    if(res.status === 404) {
+      console.warn('⚠️ 仓库无 mods.json');
+      modsData = [];
+      if(grid) grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;background:rgba(255,0,0,0.1);border-radius:12px;border:1px dashed rgba(255,0,0,0.3);">
+        <h3>${T[state.lang].debug_title}</h3><p>${T[state.lang].debug_empty}</p>
+        <p style="font-size:0.8rem;opacity:0.7;margin-top:8px;">请去后台上传第一个 Mod</p></div>`;
+      return;
+    }
+
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
+    if(!json.content) throw new Error('Invalid JSON structure');
+
+    modsData = JSON.parse(base64ToUtf8(json.content));
+    console.log('✅ 数据加载成功:', modsData);
+    if(!modsData.length) console.warn('⚠️ mods.json 为空数组');
+  } catch(e) {
+    console.error('❌ 加载失败:', e);
+    modsData = [];
+    if(grid) grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;background:rgba(255,0,0,0.1);border-radius:12px;border:1px dashed rgba(255,0,0,0.3);">
+      <h3>${T[state.lang].debug_title}</h3><p style="color:#ff6b6b;">${e.message}</p>
+      <p style="font-size:0.8rem;opacity:0.7;margin-top:8px;">检查 Token 权限或网络连接</p></div>`;
+  }
 }
 
+// 🖼️ 渲染游戏页（严格匹配 + 调试输出）
 function renderGamePage(game) {
-  const grid = document.getElementById('mod-grid'); if(!grid) return;
-  console.log(`🎨 渲染 ${game}`, modsData);
-  if(!modsData||!modsData.length) { grid.innerHTML=`<p style="grid-column:1/-1;text-align:center;opacity:0.6;">📭 ${T[state.lang].none}</p>`; return; }
-  const list = modsData.filter(m => String(m.game).trim().toLowerCase() === String(game).trim().toLowerCase());
-  if(!list.length) { grid.innerHTML=`<p style="grid-column:1/-1;text-align:center;opacity:0.6;">📦 ${game} 分类暂无 Mod</p>`; return; }
+  const grid = document.getElementById('mod-grid');
+  if(!grid) { console.error('❌ 页面缺少 #mod-grid'); return; }
+
+  console.log(`🎨 渲染 ${game} | 当前数据量: ${modsData.length}`);
+  console.log('📦 原始数据:', modsData);
+
+  if(!modsData || !modsData.length) {
+    grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;opacity:0.6;">📭 ${T[state.lang].none}</p>`;
+    return;
+  }
+
+  const target = String(game).trim().toLowerCase();
+  const list = modsData.filter(m => {
+    const mGame = String(m.game || '').trim().toLowerCase();
+    console.log(`🔍 比对: "${mGame}" === "${target}" ? ${mGame === target}`);
+    return mGame === target;
+  });
+
+  console.log(`✅ 过滤结果: ${list.length} 个 Mod`);
+
+  if(!list.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;background:rgba(255,165,0,0.1);border-radius:12px;border:1px dashed rgba(255,165,0,0.3);">
+      <h3>${T[state.lang].debug_title}</h3><p>${T[state.lang].debug_mismatch}</p>
+      <p style="font-size:0.8rem;opacity:0.7;margin-top:8px;">仓库中 game 字段值: ${modsData.map(m=>m.game).join(', ')}</p></div>`;
+    return;
+  }
+
   grid.innerHTML = list.map(m => `
     <div class="mod-card">
       <img src="${m.icon}" class="mod-img" onerror="this.style.background='#333'">
       <div class="mod-header"><h3 class="mod-name">${m.name}</h3><span class="mod-ver">v${m.version}</span></div>
-      <p class="mod-desc">${m.desc||T[state.lang].no_desc}</p>
+      <p class="mod-desc">${m.desc || T[state.lang].no_desc}</p>
       <div class="mod-actions">
         <a href="${m.file}" download class="glass-btn">⬇️ 下载</a>
-        ${m.source?`<a href="${m.source}" download class="glass-btn" style="opacity:0.7">📦 源码</a>`:''}
+        ${m.source ? `<a href="${m.source}" download class="glass-btn" style="opacity:0.7">📦 源码</a>` : ''}
       </div>
     </div>`).join('');
 }
 
+// 🔑 后台逻辑
 function saveToken() {
   const t=document.getElementById('gh-token').value.trim();
   if(t.startsWith('github_pat_')) { localStorage.setItem('gh_token',t); state.ghToken=t; document.getElementById('token-status').textContent='✅ 已保存'; document.getElementById('token-config').style.display='none'; document.getElementById('auth-wrap').style.display='block'; }
@@ -126,6 +177,7 @@ function loadModForUpdate(id) {
 function previewFile(i,l) { const lb=document.getElementById(l); lb.textContent=i.files?.length?`✅ ${i.files.length} 个`:'不替换'; }
 function resetForm() { document.getElementById('mod-form').reset(); document.querySelectorAll('[id^=lbl-]').forEach(l=>l.textContent='选择文件'); }
 
+// 🚀 提交处理
 async function handleFormSubmit(e) {
   e.preventDefault(); if(state.isBusy)return alert('操作中...'); if(!state.ghToken)return alert(T[state.lang].token_req); if(state.mode==='update'&&!state.editingId)return alert(T[state.lang].please_select);
   state.isBusy=true; const bid=state.mode==='update'?'update-btn':'submit-btn', btn=document.getElementById(bid), orig=btn.textContent; btn.disabled=true;btn.textContent='⏳';
@@ -138,12 +190,18 @@ async function handleFormSubmit(e) {
     const mF=document.getElementById(state.mode==='update'?'u-mod':'f-mod').files[0];
     const sF=document.getElementById(state.mode==='update'?'u-src':'f-src').files[0];
     if(state.mode==='upload'&&(!iF||!mF)) throw new Error("必须选图标和Mod");
+
     const b64=f=>f?new Promise(r=>{const rd=new FileReader();rd.onload=()=>r(rd.result.split(',')[1]);rd.readAsDataURL(f);}):Promise.resolve(null);
     const [iB,mB,sB]=await Promise.all([b64(iF),b64(mF),sF?b64(sF):null]);
-    let tgt=null, jc=[]; try{const r=await ghGet('mods.json');jc=JSON.parse(base64ToUtf8(r.content));}catch(e){}
+
+    let tgt=null, jc=[];
+    try{const r=await ghGet('mods.json');jc=JSON.parse(base64ToUtf8(r.content));}catch(e){console.log('首次创建 mods.json');}
+
     if(state.mode==='update'){
       const idx=jc.findIndex(m=>m.id===state.editingId); if(idx===-1)throw new Error('找不到原记录'); tgt=jc[idx];
-      if(iB)await ghPut(tgt.icon,iB,`Upd icon`); if(mB)await ghPut(tgt.file,mB,`Upd mod`); if(sB)await ghPut(tgt.source,sB,`Upd src`);
+      if(iB) await ghPut(tgt.icon,iB,`Upd icon`);
+      if(mB) await ghPut(tgt.file,mB,`Upd mod`);
+      if(sB) await ghPut(tgt.source,sB,`Upd src`);
       Object.assign(tgt,{name,game:cat,version:ver,desc}); jc[idx]=tgt;
     } else {
       const sf=name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'_');
@@ -151,29 +209,87 @@ async function handleFormSubmit(e) {
       await Promise.all([ghPut(p.icon,iB,'Add ic'),ghPut(p.mod,mB,'Add mod'),sB?ghPut(p.src,sB,'Add src'):null]);
       tgt={id:Date.now().toString(),name,game:cat,version:ver,icon:p.icon,file:p.mod,source:p.src,desc,screenshots:[]}; jc.push(tgt);
     }
+
     await ghPut('mods.json',utf8ToBase64(JSON.stringify(jc,null,2)),`${state.mode==='update'?'Upd':'Add'}: ${name}`);
+
     if(state.mode==='update'){const i=modsData.findIndex(m=>m.id===state.editingId);if(i!==-1)modsData[i]=tgt;} else modsData.push(tgt);
     renderCurrentPage(); resetForm(); populateUpdateSelect(); alert(T[state.lang].success);
   } catch(err){console.error(err);alert(T[state.lang].err+': '+err.message);}
   finally{state.isBusy=false;btn.disabled=false;btn.textContent=orig;}
 }
 
+// 🗑️ 删除修复版（彻底解决 sha 报错）
 async function deleteMod(id) {
-  if(!confirm(T[state.lang].del_confirm))return; const m=modsData.find(x=>x.id===id);if(!m)return; state.isBusy=true;
+  if(!confirm(T[state.lang].del_confirm)) return;
+  const m = modsData.find(x => x.id === id);
+  if(!m) return alert('找不到该 Mod');
+
+  state.isBusy = true;
   try {
-    let jc=[];try{const r=await ghGet('mods.json');jc=JSON.parse(base64ToUtf8(r.content));}catch(e){}
-    await ghPut('mods.json',utf8ToBase64(JSON.stringify(jc.filter(x=>x.id!==id),null,2)),`Del: ${m.name}`);
-    [m.icon,m.file,m.source].filter(Boolean).forEach(async fp=>{try{const f=await ghGet(fp);await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${fp}`,{method:'DELETE',headers:{'Authorization':`Bearer ${state.ghToken}`,'Accept':'application/vnd.github.v3+json'},body:JSON.stringify({message:'Del',sha:f.sha})});}catch(e){}});
-    modsData=modsData.filter(x=>x.id!==id);loadAdminList();renderCurrentPage();alert('✅ 删除成功');
-  } catch(e){alert('❌ 失败: '+e.message);} finally{state.isBusy=false;}
+    // 1. 更新 mods.json
+    let jc = [];
+    try { const r = await ghGet('mods.json'); jc = JSON.parse(base64ToUtf8(r.content)); } catch(e){}
+    const newJc = jc.filter(x => x.id !== id);
+    await ghPut('mods.json', utf8ToBase64(JSON.stringify(newJc, null, 2)), `Del: ${m.name}`);
+
+    // 2. 删除仓库文件（安全获取 SHA）
+    const files = [m.icon, m.file, m.source].filter(Boolean);
+    for(const fp of files) {
+      try {
+        const fData = await ghGet(fp);
+        const sha = fData?.sha;
+        if(!sha) { console.warn(`⚠️ ${fp} 无 SHA，跳过删除`); continue; }
+        await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${fp}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
+          body: JSON.stringify({ message: `Delete ${fp}`, sha: sha })
+        });
+      } catch(e) { console.warn(`删除文件 ${fp} 失败:`, e); }
+    }
+
+    // 3. 更新本地状态
+    modsData = modsData.filter(x => x.id !== id);
+    loadAdminList();
+    renderCurrentPage();
+    alert('✅ 删除成功！');
+  } catch(e) {
+    console.error(e);
+    alert('❌ 删除失败: ' + e.message);
+  } finally {
+    state.isBusy = false;
+  }
 }
 
-async function ghGet(p){const r=await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${p}?ref=${state.branch}&t=${Date.now()}`,{headers:{'Authorization':`Bearer ${state.ghToken}`,'Accept':'application/vnd.github.v3+json'}});if(!r.ok)throw new Error(`GET ${r.status}`);return await r.json();}
-async function ghPut(p,b64,msg='Update',ret=3){
-  if(!b64)return; for(let i=0;i<ret;i++){
-    let sh=null;try{sh=(await ghGet(p)).sha;}catch(e){}
-    const r=await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${p}?ref=${state.branch}`,{method:'PUT',headers:{'Authorization':`Bearer ${state.ghToken}`,'Accept':'application/vnd.github.v3+json'},body:JSON.stringify({message:msg||'Update',content:b64,...(sh?{sha}:{})})});
-    if(r.ok)return await r.json(); const e=await r.json(); if((e.message?.includes('expected')||e.message?.includes('match'))&&i<ret-1){await new Promise(r=>setTimeout(r,1000*(i+1)));continue;} throw e;
+// 🛡️ API 封装
+async function ghGet(p) {
+  const r = await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${p}?ref=${state.branch}&t=${Date.now()}`, {
+    headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
+  });
+  if(!r.ok) throw new Error(`GET ${p} 失败: ${r.status}`);
+  return await r.json();
+}
+
+async function ghPut(p, b64, msg='Update', retries=3) {
+  if(!b64) return;
+  for(let i=0; i<retries; i++) {
+    let sha = null;
+    try { const f = await ghGet(p); sha = f.sha; } catch(e) {}
+
+    const res = await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${p}?ref=${state.branch}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
+      body: JSON.stringify({ message: msg, content: b64, ...(sha ? {sha} : {}) })
+    });
+
+    if(res.ok) return await res.json();
+    const err = await res.json();
+    const isConflict = err.message?.includes('expected') || err.message?.includes('match');
+    if(isConflict && i < retries-1) {
+      console.warn(`⏳ SHA 冲突，重试 ${i+1}...`);
+      await new Promise(r => setTimeout(r, 1000*(i+1)));
+      continue;
+    }
+    throw err;
   }
 }
 
