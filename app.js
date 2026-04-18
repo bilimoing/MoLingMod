@@ -5,7 +5,7 @@ const state = {
   ghToken: localStorage.getItem('gh_token') || '',
   user: 'bilimoing', // 👈 替换为你的 GitHub 用户名
   repo: 'MoLingMod',       // 👈 替换为你的仓库名
-  branch: 'main',
+  branch: 'master',
   mode: 'upload', // 'upload' or 'update'
   editingId: null,
   isBusy: false
