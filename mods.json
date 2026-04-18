@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "1776517431797",
+    "name": "更差的体验",
+    "game": "terraria",
+    "version": "0.0.0.1",
+    "icon": "mods/更差的体验_0.0.0.1_icon.png",
+    "file": "mods/更差的体验_0.0.0.1.tmod",
+    "source": "mods/更差的体验_0.0.0.1_src.zip",
+    "desc": "1.4.5重置版更差的体验",
+    "screenshots": []
+  }
+]
