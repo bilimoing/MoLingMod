@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的世界 Mods</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="minecraft">
+  <div class="bg-gif"></div><div class="bg-overlay"></div><div class="bg-glow"></div>
+  <div class="music-panel" onclick="toggleMusic()"><div class="vinyl" id="vinyl"></div></div>
+  <div class="lang-switch"><button onclick="setLang('zh')" class="lang-btn active">中</button><button onclick="setLang('en')" class="lang-btn">EN</button></div>
+  <audio id="bgm" loop preload="auto"><source src="assets/bgm.mp3" type="audio/mpeg"></audio>
+  <main class="page-container">
+    <a href="index.html" class="back-btn">← <span data-i18n="back">返回主页</span></a>
+    <h2 class="page-title">⛏️ <span data-i18n="minecraft">我的世界</span> Mods</h2>
+    <div class="mod-grid" id="mod-grid"></div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

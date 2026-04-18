@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>末泠的Mod库</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="home">
+  <div class="bg-gif"></div>
+  <div class="bg-overlay"></div>
+  <div class="bg-glow"></div>
+
+  <div class="music-panel" id="musicPanel" onclick="toggleMusic()" title="播放/暂停音乐">
+    <div class="vinyl" id="vinyl"></div>
+  </div>
+
+  <div class="lang-switch">
+    <button onclick="setLang('zh')" class="lang-btn active">中</button>
+    <button onclick="setLang('en')" class="lang-btn">EN</button>
+  </div>
+
+  <audio id="bgm" loop preload="auto"><source src="assets/bgm.mp3" type="audio/mpeg"></audio>
+
+  <main class="home-container">
+    <h1 class="hero-title" data-i18n="title">末泠的Mod库</h1>
+    <div class="game-grid">
+      <a href="terraria.html" class="big-btn">
+        <img src="assets/icon-terraria.png" class="game-icon" alt="Terraria">
+        <span data-i18n="terraria">泰拉瑞亚</span>
+      </a>
+      <a href="stardew.html" class="big-btn">
+        <img src="assets/icon-stardew.png" class="game-icon" alt="Stardew">
+        <span data-i18n="stardew">星露谷物语</span>
+      </a>
+      <a href="minecraft.html" class="big-btn">
+        <img src="assets/icon-minecraft.png" class="game-icon" alt="Minecraft">
+        <span data-i18n="minecraft">我的世界</span>
+      </a>
+    </div>
+    <a href="admin.html" class="glass-btn" data-i18n="admin">🔧 管理后台</a>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
