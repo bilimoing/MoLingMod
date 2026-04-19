@@ -83,44 +83,22 @@ let modsData = [];
 async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
-    console.log('Token 状态:', state.ghToken ? '已设置' : '未设置');
     
-    // 🔑 强制禁用缓存
-    const url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+    // 使用 jsDelivr CDN 公开访问，无需 Token
+    const url = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
     
-    const headers = {
-      'Accept': 'application/vnd.github.v3+json'
-    };
-    // 使用 Token（如果有）
-    if(state.ghToken) {
-      headers['Authorization'] = `Bearer ${state.ghToken}`;
-      console.log('使用 Token 认证');
-    } else {
-      console.log('⚠️ 未检测到 Token，尝试匿名访问');
-    }
-    
-    console.log('📡 请求 URL:', url);
-    const res = await fetch(url, { 
-      cache: 'no-store',
-      headers: headers
-    });
+    console.log('请求 URL:', url);
+    const res = await fetch(url, { cache: 'no-store' });
 
-    console.log('📡 GitHub API 响应状态:', res.status);
+    console.log('响应状态:', res.status);
 
     if(res.status === 404) {
-      setStatus('⚠仓库无 mods.json，请先去后台上传', '#ff4757');
-      modsData = []; return;
-    }
-    if(res.status === 403) {
-      setStatus('访问被拒绝，请检查 Token 或仓库权限', '#ff4757');
+      setStatus('仓库无 mods.json', '#ff4757');
       modsData = []; return;
     }
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const json = await res.json();
-    console.log('GitHub 返回数据类型:', typeof json);
-    
-    modsData = json.content ? JSON.parse(base64ToUtf8(json.content)) : [];
+    modsData = await res.json();
     console.log('数据加载成功，共', modsData.length, '个mod');
     console.log('Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
     setStatus('数据已同步', '#4ade80');
