@@ -84,11 +84,20 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 使用 jsDelivr CDN 公开访问，无需 Token
-    const url = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
+    // 优先尝试 jsDelivr CDN（公开仓库无需Token）
+    let url = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
+    let res = await fetch(url, { cache: 'no-store' });
     
-    console.log('请求 URL:', url);
-    const res = await fetch(url, { cache: 'no-store' });
+    // 如果 CDN 失败（404或403），尝试 GitHub API（可能需要Token）
+    if (!res.ok && (res.status === 404 || res.status === 403)) {
+      console.log('CDN 访问失败，尝试 GitHub API...');
+      url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+      const headers = { 'Accept': 'application/vnd.github.v3+json' };
+      if (state.ghToken) {
+        headers['Authorization'] = `Bearer ${state.ghToken}`;
+      }
+      res = await fetch(url, { cache: 'no-store', headers });
+    }
 
     console.log('响应状态:', res.status);
 
@@ -96,9 +105,22 @@ async function loadMods() {
       setStatus('仓库无 mods.json', '#ff4757');
       modsData = []; return;
     }
+    if(res.status === 403) {
+      setStatus('访问被拒绝，仓库可能是私有的', '#ff4757');
+      modsData = []; return;
+    }
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    modsData = await res.json();
+    // 判断数据来源：GitHub API 返回的是 base64 编码，CDN 直接返回 JSON
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      // GitHub API 返回 {content: "base64...", ...}，CDN 直接返回数组
+      modsData = Array.isArray(data) ? data : (data.content ? JSON.parse(base64ToUtf8(data.content)) : []);
+    } else {
+      modsData = await res.json();
+    }
+    
     console.log('数据加载成功，共', modsData.length, '个mod');
     console.log('Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
     setStatus('数据已同步', '#4ade80');
