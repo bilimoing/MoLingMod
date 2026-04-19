@@ -108,7 +108,6 @@ textarea.glass-input { resize:vertical; }
 .screenshot-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px; }
 .screenshot-item { width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:pointer;transition:0.2s; }
 .screenshot-item:hover { transform:scale(1.05);border-color:var(--pri); }
-.screenshot-video { width:100%;aspect-ratio:16/9;border-radius:10px;border:1px solid var(--border); }
 .modal-actions { display:flex;gap:12px;justify-content:center;padding-top:20px;border-top:1px solid var(--border); }
 .modal-actions .glass-btn { padding:12px 32px;font-size:1rem; }
 
@@ -128,3 +127,9 @@ textarea.glass-input { resize:vertical; }
 .selected-tags { display:flex;flex-wrap:wrap;gap:6px;margin-top:10px; }
 .selected-tag { background:rgba(139,92,246,0.3);color:#fff;padding:4px 12px;border-radius:12px;font-size:0.8rem;display:flex;align-items:center;gap:6px; }
 .selected-tag button { background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;padding:0 2px; }
+
+/* 灯箱放大 */
+.lightbox-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.95);backdrop-filter:blur(10px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px; }
+.lightbox-content { max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.6); }
+.lightbox-close { position:absolute;top:20px;right:20px;background:var(--glass);border:1px solid var(--border);color:#fff;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.5rem;display:flex;align-items:center;justify-content:center;transition:0.2s;z-index:2001; }
+.lightbox-close:hover { background:var(--dan);transform:scale(1.1); }

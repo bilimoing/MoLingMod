@@ -13,8 +13,8 @@ console.log('Token 状态:', state.ghToken ? '已加载 (' + state.ghToken.subst
 console.log('登录状态:', state.auth ? '已登录' : '未登录');
 
 const T = {
-  zh: { title:'末泠的Mod库', terraria:'泰拉瑞亚', stardew:'星露谷物语', minecraft:'我的世界', admin:'管理后台', back:'返回主页', login_t:'管理员登录', hint:'默认密码: admin123', login_b:'登录', cancel:'取消', logout:'退出', admin_t:'Mod 管理', upload:'上传', update:'更新', manage:'列表', name:'名称', cat:'分类', ver:'版本', icon:'图标', mod_file:'Mod文件', source_file:'源码', desc:'描述', submit_upload:'提交', submit_update:'更新', del:'删除', none:'暂无Mod', down:'⬇下载', success:'成功！', err:'失败', loading:'加载中...', token_req:'请先保存 Token', del_confirm:'确定删除？', retrying:'重试中...', please_select:'请先选择', no_desc: '暂无描述', detail:'查看详情', screenshots:'预览图', tags:'标签', add_tag:'添加标签', preset_tags:'预制标签', manual_tag:'手动输入', mod_detail:'Mod 详情', source:'源码' },
-  en: { title:"Moling's Mods", terraria:'Terraria', stardew:'Stardew Valley', minecraft:'Minecraft', admin:'Admin', back:'Back', login_t:'Admin Login', hint:'Default: admin123', login_b:'Login', cancel:'Cancel', logout:'Logout', admin_t:'Mod Admin', upload:'Upload', update:'Update', manage:'List', name:'Name', cat:'Category', ver:'Version', icon:'Icon', mod_file:'Mod File', source_file:'Source', desc:'Description', submit_upload:'Submit', submit_update:'Update', del:'Delete', none:'No mods', down:'⬇Download', success:'Success!', err:'Failed', loading:'Loading...', token_req:'Save Token first', del_confirm:'Delete?', retrying:'Retrying...', please_select:'Select first', no_desc: 'No description', detail:'View Details', screenshots:'Screenshots', tags:'Tags', add_tag:'Add Tag', preset_tags:'Preset Tags', manual_tag:'Manual Input', mod_detail:'Mod Details', source:'Source' }
+  zh: { title:'末泠的Mod库', terraria:'泰拉瑞亚', stardew:'星露谷物语', minecraft:'我的世界', admin:'管理后台', back:'返回主页', login_t:'管理员登录', hint:'默认密码: admin123', login_b:'登录', cancel:'取消', logout:'退出', admin_t:'Mod 管理', upload:'上传', update:'更新', manage:'列表', name:'名称', cat:'分类', ver:'版本', icon:'图标', mod_file:'Mod文件', source_file:'源码', desc:'描述', submit_upload:'提交', submit_update:'更新', del:'删除', none:'暂无Mod', down:'下载Mod', success:'成功！', err:'失败', loading:'加载中...', token_req:'请先保存 Token', del_confirm:'确定删除？', retrying:'重试中...', please_select:'请先选择', no_desc: '暂无描述', detail:'查看详情', screenshots:'预览图', tags:'标签', add_tag:'添加标签', preset_tags:'预制标签', manual_tag:'手动输入', mod_detail:'Mod 详情', source:'下载源码' },
+  en: { title:"Moling's Mods", terraria:'Terraria', stardew:'Stardew Valley', minecraft:'Minecraft', admin:'Admin', back:'Back', login_t:'Admin Login', hint:'Default: admin123', login_b:'Login', cancel:'Cancel', logout:'Logout', admin_t:'Mod Admin', upload:'Upload', update:'Update', manage:'List', name:'Name', cat:'Category', ver:'Version', icon:'Icon', mod_file:'Mod File', source_file:'Source', desc:'Description', submit_upload:'Submit', submit_update:'Update', del:'Delete', none:'No mods', down:'Download Mod', success:'Success!', err:'Failed', loading:'Loading...', token_req:'Save Token first', del_confirm:'Delete?', retrying:'Retrying...', please_select:'Select first', no_desc: 'No description', detail:'View Details', screenshots:'Screenshots', tags:'Tags', add_tag:'Add Tag', preset_tags:'Preset Tags', manual_tag:'Manual Input', mod_detail:'Mod Details', source:'Download Source' }
 };
 
 const utf8ToBase64 = str => btoa(new TextEncoder().encode(str).reduce((s,c)=>s+String.fromCharCode(c),''));
@@ -84,20 +84,13 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 优先尝试 jsDelivr CDN（公开仓库无需Token）
-    let url = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
-    let res = await fetch(url, { cache: 'no-store' });
-    
-    // 如果 CDN 失败（404或403），尝试 GitHub API（可能需要Token）
-    if (!res.ok && (res.status === 404 || res.status === 403)) {
-      console.log('CDN 访问失败，尝试 GitHub API...');
-      url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
-      const headers = { 'Accept': 'application/vnd.github.v3+json' };
-      if (state.ghToken) {
-        headers['Authorization'] = `Bearer ${state.ghToken}`;
-      }
-      res = await fetch(url, { cache: 'no-store', headers });
+    const url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+    const headers = { 'Accept': 'application/vnd.github.v3+json' };
+    if (state.ghToken) {
+      headers['Authorization'] = `Bearer ${state.ghToken}`;
     }
+    
+    const res = await fetch(url, { cache: 'no-store', headers });
 
     console.log('响应状态:', res.status);
 
@@ -106,20 +99,13 @@ async function loadMods() {
       modsData = []; return;
     }
     if(res.status === 403) {
-      setStatus('访问被拒绝，仓库可能是私有的', '#ff4757');
+      setStatus('访问被拒绝，请在后台输入 Token', '#ff4757');
       modsData = []; return;
     }
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    // 判断数据来源：GitHub API 返回的是 base64 编码，CDN 直接返回 JSON
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      const data = await res.json();
-      // GitHub API 返回 {content: "base64...", ...}，CDN 直接返回数组
-      modsData = Array.isArray(data) ? data : (data.content ? JSON.parse(base64ToUtf8(data.content)) : []);
-    } else {
-      modsData = await res.json();
-    }
+    const json = await res.json();
+    modsData = json.content ? JSON.parse(base64ToUtf8(json.content)) : [];
     
     console.log('数据加载成功，共', modsData.length, '个mod');
     console.log('Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
@@ -189,7 +175,7 @@ function renderGamePage(game) {
       <p class="mod-desc">${m.desc || T[state.lang].no_desc}</p>
       <div class="mod-actions">
         <a href="${fileUrl}" download class="glass-btn" onclick="event.stopPropagation()">${T[state.lang].down}</a>
-        ${m.source ? `<a href="${sourceUrl}" download class="glass-btn" style="opacity:0.7" onclick="event.stopPropagation()">${T[state.lang].source}</a>` : ''}
+        ${m.source && state.auth ? `<a href="${sourceUrl}" download class="glass-btn" style="opacity:0.7" onclick="event.stopPropagation()">${T[state.lang].source}</a>` : ''}
         <button class="glass-btn" style="opacity:0.8" onclick="event.stopPropagation();showModDetail('${m.id}')">${T[state.lang].detail}</button>
       </div>
     </div>`;
@@ -213,9 +199,9 @@ function showModDetail(id) {
       const url = s.startsWith('http') ? s : baseUrl + s;
       const isVideo = s.match(/\.(mp4|webm|ogg)$/i);
       if (isVideo) {
-        return `<video class="screenshot-video" controls src="${url}"></video>`;
+        return `<video class="screenshot-item" src="${url}" onclick="openLightbox('${url}', 'video')"></video>`;
       } else {
-        return `<img class="screenshot-item" src="${url}" onclick="window.open('${url}','_blank')">`;
+        return `<img class="screenshot-item" src="${url}" onclick="openLightbox('${url}', 'image')">`;
       }
     }).join('');
     screenshotsHtml = `
@@ -237,11 +223,31 @@ function showModDetail(id) {
       ${screenshotsHtml}
       <div class="modal-actions">
         <a href="${fileUrl}" download class="glass-btn">${T[state.lang].down}</a>
-        ${m.source ? `<a href="${sourceUrl}" download class="glass-btn" style="opacity:0.8">${T[state.lang].source}</a>` : ''}
+        ${m.source && state.auth ? `<a href="${sourceUrl}" download class="glass-btn" style="opacity:0.8">${T[state.lang].source}</a>` : ''}
       </div>
     </div>
   `;
   document.body.appendChild(modal);
+}
+
+// 🖼️ 灯箱放大功能
+function openLightbox(url, type) {
+  const lightbox = document.createElement('div');
+  lightbox.className = 'lightbox-overlay';
+  lightbox.onclick = (e) => { if (e.target === lightbox) lightbox.remove(); };
+  
+  let content = '';
+  if (type === 'video') {
+    content = `<video class="lightbox-content" controls autoplay src="${url}"></video>`;
+  } else {
+    content = `<img class="lightbox-content" src="${url}">`;
+  }
+  
+  lightbox.innerHTML = `
+    <button class="lightbox-close" onclick="this.closest('.lightbox-overlay').remove()">✕</button>
+    ${content}
+  `;
+  document.body.appendChild(lightbox);
 }
 
 // 🔑 后台逻辑 (保持原样，已验证可用)
