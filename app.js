@@ -169,7 +169,7 @@ function renderGamePage(game) {
     
     return `
     <div class="mod-card" onclick="showModDetail('${m.id}')" style="cursor:pointer;">
-      <img src="${iconUrl}" class="mod-img" onerror="this.style.background='#333'">
+      <img src="${iconUrl}" class="mod-img" onerror="this.style.background='#333'" alt="">
       <div class="mod-header"><h3 class="mod-name">${m.name}</h3><span class="mod-ver">v${m.version}</span></div>
       ${tagsHtml ? `<div class="mod-tags">${tagsHtml}</div>` : ''}
       <p class="mod-desc">${m.desc || T[state.lang].no_desc}</p>
