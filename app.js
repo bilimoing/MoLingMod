@@ -532,9 +532,102 @@ async function handleFormSubmit(e) {
     try{const r=await ghGet('mods.json');jc=JSON.parse(base64ToUtf8(r.content));}catch(e){console.log('首次创建');}
 
     if(state.mode==='update'){
-      const idx=jc.findIndex(m=>m.id===state.editingId); if(idx===-1)throw new Error('找不到原记录'); tgt=jc[idx];
-      if(iB) await ghPut(tgt.icon,iB,`Upd icon`); if(mB) await ghPut(tgt.file,mB,`Upd mod`); if(sB) await ghPut(tgt.source,sB,`Upd src`);
-      Object.assign(tgt,{name,game:cat,version:ver,desc}); jc[idx]=tgt;
+      const idx=jc.findIndex(m=>m.id===state.editingId); if(idx===-1)throw new Error('找不到原记录'); 
+      const oldTgt = jc[idx];
+      
+      // 只删除被替换的旧文件
+      if(iB) {
+        try { 
+          const fData = await ghGet(oldTgt.icon); 
+          if(fData?.sha) {
+            await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${oldTgt.icon}`, {
+              method: 'DELETE', 
+              headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
+              body: JSON.stringify({ message: `Del old icon`, sha: fData.sha })
+            });
+          }
+        } catch(e) { console.log('删除旧图标失败:', e); }
+      }
+      
+      if(mB) {
+        try { 
+          const fData = await ghGet(oldTgt.file); 
+          if(fData?.sha) {
+            await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${oldTgt.file}`, {
+              method: 'DELETE', 
+              headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
+              body: JSON.stringify({ message: `Del old mod`, sha: fData.sha })
+            });
+          }
+        } catch(e) { console.log('删除旧Mod失败:', e); }
+      }
+      
+      if(sB && oldTgt.source) {
+        try { 
+          const fData = await ghGet(oldTgt.source); 
+          if(fData?.sha) {
+            await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${oldTgt.source}`, {
+              method: 'DELETE', 
+              headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
+              body: JSON.stringify({ message: `Del old source`, sha: fData.sha })
+            });
+          }
+        } catch(e) { console.log('删除旧源码失败:', e); }
+      }
+      
+      // 如果上传了新预览图，删除旧的
+      if (_screenshotFiles.length > 0 && oldTgt.screenshots && oldTgt.screenshots.length > 0) {
+        for(const ss of oldTgt.screenshots) {
+          try {
+            const fData = await ghGet(ss);
+            if(fData?.sha) {
+              await fetch(`https://api.github.com/repos/${state.user}/${state.repo}/contents/${ss}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${state.ghToken}`, 'Accept': 'application/vnd.github.v3+json' },
+                body: JSON.stringify({ message: `Del old screenshot`, sha: fData.sha })
+              });
+            }
+          } catch(e) { console.log('删除旧预览图失败:', e); }
+        }
+      }
+      
+      // 构建新文件路径
+      tgt={...oldTgt};
+      const sf=name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'_');
+      const p={
+        icon: iB ? `mods/${sf}_${ver}_ic.${iF.name.split('.').pop()}` : oldTgt.icon,
+        mod: mB ? `mods/${sf}_${ver}.${mF.name.split('.').pop()}` : oldTgt.file,
+        src: sB ? `mods/${sf}_${ver}_src.${sF.name.split('.').pop()}` : (oldTgt.source || null)
+      };
+      
+      // 上传新预览图
+      const screenshotPaths = [];
+      for (let i = 0; i < _screenshotFiles.length; i++) {
+        const ssFile = _screenshotFiles[i];
+        const ext = ssFile.name.split('.').pop();
+        const ssPath = `mods/${sf}_${ver}_ss${i+1}.${ext}`;
+        const ssB64 = await b64(ssFile);
+        await ghPut(ssPath, ssB64, `Add screenshot ${i+1}`);
+        screenshotPaths.push(ssPath);
+      }
+      
+      // 上传被替换的文件
+      if(iB) await ghPut(p.icon,iB,'Upd icon'); 
+      if(mB) await ghPut(p.mod,mB,'Upd mod'); 
+      if(sB && p.src) await ghPut(p.src,sB,'Upd src');
+      
+      Object.assign(tgt,{
+        name, 
+        game:cat, 
+        version:ver, 
+        icon:p.icon, 
+        file:p.mod, 
+        source:p.src, 
+        desc, 
+        tags:[..._selectedTags], 
+        screenshots: _screenshotFiles.length > 0 ? screenshotPaths : oldTgt.screenshots
+      }); 
+      jc[idx]=tgt;
     } else {
       const sf=name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'_');
       const p={icon:`mods/${sf}_${ver}_ic.${iF.name.split('.').pop()}`,mod:`mods/${sf}_${ver}.${mF.name.split('.').pop()}`,src:sF?`mods/${sf}_${ver}_src.${sF.name.split('.').pop()}`:null};
