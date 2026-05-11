@@ -16,5 +16,19 @@
       "mods/自定义卖物品_0.0.0.1_ss2.png",
       "mods/自定义卖物品_0.0.0.1_ss3.png"
     ]
+  },
+  {
+    "id": "1778481401416",
+    "name": "NPC夜晚会开门",
+    "game": "terraria",
+    "version": "0.1",
+    "icon": "mods/NPC夜晚会开门_0.1_ic.png",
+    "file": "mods/NPC夜晚会开门_0.1.tmod",
+    "source": "mods/NPC夜晚会开门_0.1_src.zip",
+    "desc": "城镇NPC在夜晚的时候会自动寻找最近的门，然后去打开。",
+    "tags": [
+      "实用辅助"
+    ],
+    "screenshots": []
   }
 ]
