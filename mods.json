@@ -30,5 +30,22 @@
       "实用辅助"
     ],
     "screenshots": []
+  },
+  {
+    "id": "1778757557043",
+    "name": "魔力果",
+    "game": "terraria",
+    "version": "0.1",
+    "icon": "mods/魔力果_0.1_ic.png",
+    "file": "mods/魔力果_0.1.tmod",
+    "source": "mods/魔力果_0.1_src.zip",
+    "desc": "添加了魔力果来增加最大魔力\n和原版的生命果一样的时期在丛林生成\n最多吃20个魔力果，每次增加5魔力\n",
+    "tags": [
+      "新增内容",
+      "地图生成"
+    ],
+    "screenshots": [
+      "mods/魔力果_0.1_ss1.png"
+    ]
   }
 ]
