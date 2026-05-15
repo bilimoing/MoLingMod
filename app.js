@@ -323,7 +323,10 @@ async function loadMods() {
       console.log('✅ GitHub API 加载成功, modsData.length =', modsData.length);
     } else {
       console.log('使用 GitHub Pages 本地路径加载（无 Token）');
-      const rawUrl = `/MoLingMod/mods.json?t=${Date.now()}`;
+      // 🔑 修复部署后路径问题：动态检测是否在子目录下
+      const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
+      const rawUrl = `${basePath}mods.json?t=${Date.now()}`;
+      console.log('正在请求:', rawUrl);
       const res = await fetch(rawUrl, { cache: 'no-store' });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -453,9 +456,11 @@ function renderModList(modList) {
   }
 
   const useCDN = false;
+  // 🔑 修复部署后资源路径问题：动态检测根路径
+  const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
   const baseUrl = useCDN
       ? `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/`
-      : (window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/');
+      : basePath;
 
   grid.innerHTML = modList.map(m => {
     const iconUrl = m.icon.startsWith('http') ? m.icon : baseUrl + m.icon;
@@ -482,9 +487,11 @@ function showModDetail(id) {
   if (!m) return;
 
   const useCDN = false;
+  // 🔑 修复部署后资源路径问题：动态检测根路径
+  const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
   const baseUrl = useCDN
       ? `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/`
-      : (window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/');
+      : basePath;
 
   const fileUrl = m.file.startsWith('http') ? m.file : baseUrl + m.file;
   const sourceUrl = m.source && !m.source.startsWith('http') ? baseUrl + m.source : m.source;
