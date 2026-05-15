@@ -647,7 +647,7 @@ function switchTab(t) {
   document.getElementById(`tab-btn-${t}`)?.classList.add('active');
   document.getElementById(`tab-${t}`).classList.add('active');
   if(t==='upload'){state.mode='upload';state.editingId=null;resetForm();}
-  if(t==='update'){state.mode='update';populateUpdateSelect();}
+  if(t==='update'){state.mode='update';_updateSelectedTags=[];populateUpdateSelect();}
   if(t==='list')loadAdminList();
 }
 function populateUpdateSelect() {
@@ -665,6 +665,12 @@ function loadModForUpdate(id) {
   document.getElementById('u-lbl-icon').textContent=`当前: ${m.icon.split('/').pop()}`;
   document.getElementById('u-lbl-mod').textContent=`当前: ${m.file.split('/').pop()}`;
   document.getElementById('u-lbl-src').textContent=m.source?`当前: ${m.source.split('/').pop()}`:'无';
+  
+  // 加载当前标签
+  _updateSelectedTags = [...(m.tags || [])];
+  renderUpdateSelectedTags();
+  renderUpdatePresetTags();
+  
   f.style.opacity='1';f.style.pointerEvents='auto';b.disabled=false;state.mode='update';
 }
 function previewFile(i,l) { const lb=document.getElementById(l); lb.textContent=i.files?.length?` ${i.files.length} 个`:'不替换'; }
@@ -747,6 +753,7 @@ function removeScreenshot(index) {
 }
 
 let _selectedTags = [];
+let _updateSelectedTags = [];
 
 function renderPresetTags() {
   const container = document.getElementById('preset-tags');
@@ -797,6 +804,59 @@ function renderSelectedTags() {
 
   container.innerHTML = _selectedTags.map(tag =>
       `<div class="selected-tag">${tag}<button onclick="removeTag('${tag}')">✕</button></div>`
+  ).join('');
+}
+
+//  更新表单的标签渲染函数
+function renderUpdatePresetTags() {
+  const container = document.getElementById('update-preset-tags');
+  if (!container) return;
+
+  const tags = PRESET_TAGS[state.lang] || PRESET_TAGS.zh;
+  container.innerHTML = tags.map(tag =>
+      `<div class="tag-option ${_updateSelectedTags.includes(tag) ? 'selected' : ''}" onclick="toggleUpdateTag('${tag}')">${tag}</div>`
+  ).join('');
+}
+
+function toggleUpdateTag(tag) {
+  const index = _updateSelectedTags.indexOf(tag);
+  if (index > -1) {
+    _updateSelectedTags.splice(index, 1);
+  } else {
+    _updateSelectedTags.push(tag);
+  }
+  renderUpdatePresetTags();
+  renderUpdateSelectedTags();
+}
+
+function addUpdateManualTag() {
+  const input = document.getElementById('update-manual-tag');
+  const tag = input.value.trim();
+
+  if (!tag) return;
+  if (_updateSelectedTags.includes(tag)) {
+    alert('标签已存在！');
+    return;
+  }
+
+  _updateSelectedTags.push(tag);
+  input.value = '';
+  renderUpdateSelectedTags();
+  renderUpdatePresetTags();
+}
+
+function removeUpdateTag(tag) {
+  _updateSelectedTags = _updateSelectedTags.filter(t => t !== tag);
+  renderUpdateSelectedTags();
+  renderUpdatePresetTags();
+}
+
+function renderUpdateSelectedTags() {
+  const container = document.getElementById('update-selected-tags');
+  if (!container) return;
+
+  container.innerHTML = _updateSelectedTags.map(tag =>
+      `<div class="selected-tag">${tag}<button onclick="removeUpdateTag('${tag}')">✕</button></div>`
   ).join('');
 }
 
@@ -909,7 +969,7 @@ async function handleFormSubmit(e) {
         file:p.mod,
         source:p.src,
         desc,
-        tags:[..._selectedTags],
+        tags:[..._updateSelectedTags],
         screenshots: _screenshotFiles.length > 0 ? screenshotPaths : oldTgt.screenshots
       });
       jc[idx]=tgt;

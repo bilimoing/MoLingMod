@@ -92,6 +92,16 @@
         <div class="fg"><label>替换Mod文件 (留空保留)</label><label class="glass-file-btn"><span id="u-lbl-mod">不替换</span><input type="file" id="u-mod" onchange="previewFile(this,'u-lbl-mod')"></label></div>
         <div class="fg"><label>替换源代码 (留空保留)</label><label class="glass-file-btn"><span id="u-lbl-src">不替换</span><input type="file" id="u-src" onchange="previewFile(this,'u-lbl-src')"></label></div>
         <div class="fg full"><label>更新描述</label><label for="u-desc"></label><textarea id="u-desc" class="glass-input" rows="4" required></textarea></div>
+        <div class="fg full">
+          <label><span data-i18n="tags">标签</span></label>
+          <p style="font-size:0.8rem;color:var(--mute);margin-bottom:8px;" data-i18n="preset_tags">预制标签</p>
+          <div id="update-preset-tags" class="tag-selector"></div>
+          <div class="manual-tag-input">
+            <label for="update-manual-tag"></label><input type="text" id="update-manual-tag" placeholder="输入自定义标签..." onkeypress="if(event.key==='Enter'){event.preventDefault();addUpdateManualTag();}">
+            <button type="button" onclick="addUpdateManualTag()" data-i18n="add_tag">添加</button>
+          </div>
+          <div id="update-selected-tags" class="selected-tags"></div>
+        </div>
         <button type="submit" id="update-btn" class="glass-btn full" disabled>提交更新</button>
       </form>
     </div>
