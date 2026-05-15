@@ -14,7 +14,7 @@ console.log('登录状态:', state.auth ? '已登录' : '未登录');
 
 const T = {
   zh: {
-    title:'末的Mod库',
+    title:'末泠的Mod库',
     terraria:'泰拉瑞亚',
     stardew:'星露谷物语',
     minecraft:'我的世界',
