@@ -304,41 +304,45 @@ async function loadMods() {
 
     if (state.ghToken) {
       console.log('使用 GitHub API 加载（有 Token）');
-      const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
-      const res = await fetch(apiUrl, {
-        cache: 'no-store',
-        headers: {
-          'Authorization': `Bearer ${state.ghToken}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
+      try {
+        const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+        const res = await fetch(apiUrl, {
+          cache: 'no-store',
+          headers: {
+            'Authorization': `Bearer ${state.ghToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const data = await res.json();
-      const content = base64ToUtf8(data.content);
-      const json = JSON.parse(content);
+        const data = await res.json();
+        const content = base64ToUtf8(data.content);
+        const json = JSON.parse(content);
 
-      modsData = Array.isArray(json) ? json : [];
-      console.log('✅ GitHub API 加载成功, modsData.length =', modsData.length);
-    } else {
-      console.log('使用 GitHub Pages 本地路径加载（无 Token）');
-      // 🔑 修复部署后路径问题：动态检测是否在子目录下
-      const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
-      const rawUrl = `${basePath}mods.json?t=${Date.now()}`;
-      console.log('正在请求:', rawUrl);
-      const res = await fetch(rawUrl, { cache: 'no-store' });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const json = await res.json();
-      modsData = Array.isArray(json) ? json : [];
-      console.log('✅ 本地路径加载成功, modsData.length =', modsData.length);
+        modsData = Array.isArray(json) ? json : [];
+        console.log('✅ GitHub API 加载成功, modsData.length =', modsData.length);
+        setStatus(T[state.lang].github_status_synced, '#4ade80');
+        setTimeout(() => setStatus(''), 2000);
+        return; // API 成功，直接返回
+      } catch(apiError) {
+        console.warn('⚠️ GitHub API 加载失败，降级到本地路径:', apiError.message);
+        // 降级到本地路径加载
+      }
     }
 
-    if (modsData.length > 0) {
-      console.log('📦 Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
-    }
+    // 本地路径加载（无 Token 或 API 失败时）
+    console.log('使用 GitHub Pages 本地路径加载');
+    const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
+    const rawUrl = `${basePath}mods.json?t=${Date.now()}`;
+    console.log('正在请求:', rawUrl);
+    const res = await fetch(rawUrl, { cache: 'no-store' });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
+    modsData = Array.isArray(json) ? json : [];
+    console.log('✅ 本地路径加载成功, modsData.length =', modsData.length);
     setStatus(T[state.lang].github_status_synced, '#4ade80');
     setTimeout(() => setStatus(''), 2000);
   } catch(e) {
