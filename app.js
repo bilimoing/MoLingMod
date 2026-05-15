@@ -323,12 +323,11 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 🚀 使用绝对路径加载 mods.json（兼容 GitHub Pages）
-    const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
-    const localUrl = `${basePath}mods.json?t=${Date.now()}`;
+    // 🚀 使用 jsDelivr CDN 加载 mods.json（解决 GitHub Pages 跨域问题）
+    const cdnUrl = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
     
-    console.log('尝试加载文件:', localUrl);
-    const res = await fetch(localUrl, { cache: 'no-store' });
+    console.log('尝试加载文件:', cdnUrl);
+    const res = await fetch(cdnUrl, { cache: 'no-store' });
     console.log('响应状态:', res.status);
     
     if (!res.ok) {
