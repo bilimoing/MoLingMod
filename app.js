@@ -323,55 +323,28 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 🚀 直接使用 GitHub Raw URL（无缓存问题）
-    const rawUrl = `https://raw.githubusercontent.com/${state.user}/${state.repo}/${state.branch}/mods.json?t=${Date.now()}`;
-    const apiHeaders = { 'Accept': 'application/vnd.github.v3+json' };
-    if (state.ghToken) {
-      apiHeaders['Authorization'] = `Bearer ${state.ghToken}`;
+    // 🚀 使用绝对路径加载 mods.json（兼容 GitHub Pages）
+    const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
+    const localUrl = `${basePath}mods.json?t=${Date.now()}`;
+    
+    console.log('尝试加载文件:', localUrl);
+    const res = await fetch(localUrl, { cache: 'no-store' });
+    console.log('响应状态:', res.status);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
     }
     
-    let res, json;
-    let fromRaw = true;
-    try {
-      // 尝试从 Raw URL 获取（实时同步，无缓存）
-      console.log('尝试从 GitHub Raw 加载:', rawUrl);
-      res = await fetch(rawUrl, { cache: 'no-store' });
-      console.log('Raw 响应状态:', res.status);
-      if (!res.ok) throw new Error(`Raw HTTP ${res.status}`);
-      json = await res.json();
-      console.log('Raw 返回数据类型:', typeof json, '是否为数组:', Array.isArray(json));
-      console.log('通过 Raw URL 成功加载 mods.json, 数据量:', json.length);
-    } catch (rawErr) {
-      fromRaw = false;
-      console.warn('Raw URL 加载失败，回退到 API:', rawErr.message);
-      // 如果 Raw 失败，回退到 API
-      const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
-      console.log('尝试从 GitHub API 加载:', apiUrl);
-      res = await fetch(apiUrl, { cache: 'no-store', headers: apiHeaders });
-      console.log('API 响应状态:', res.status);
-
-      if(res.status === 404) {
-        setStatus(T[state.lang].github_status_no_file, '#ff4757');
-        modsData = []; return;
-      }
-      if(res.status === 403) {
-        setStatus(T[state.lang].github_status_access_denied, '#ff4757');
-        modsData = []; return;
-      }
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const apiJson = await res.json();
-      json = apiJson.content ? JSON.parse(base64ToUtf8(apiJson.content)) : [];
-      console.log('通过 API 成功加载 mods.json, 数据量:', json.length);
-    }
-
+    const json = await res.json();
+    console.log('返回数据类型:', typeof json, '是否为数组:', Array.isArray(json));
+    
     modsData = Array.isArray(json) ? json : [];
     
     console.log('✅ 最终 modsData.length =', modsData.length);
     if (modsData.length > 0) {
       console.log('📦 Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
     }
-    setStatus(fromRaw ? T[state.lang].github_status_synced : '📡 通过 API 加载', '#4ade80');
+    setStatus(T[state.lang].github_status_synced, '#4ade80');
     setTimeout(() => setStatus(''), 2000);
   } catch(e) {
     console.error('❌ 加载失败:', e);
@@ -494,7 +467,11 @@ function renderModList(modList) {
     return;
   }
   
-  const baseUrl = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/`;
+  // 🚀 使用 GitHub Pages 路径或 jsDelivr CDN
+  const useCDN = true; // 设置为 false 则使用 GitHub Pages 路径
+  const baseUrl = useCDN 
+    ? `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/`
+    : (window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/');
   
   grid.innerHTML = modList.map(m => {
     const iconUrl = m.icon.startsWith('http') ? m.icon : baseUrl + m.icon;
@@ -521,7 +498,12 @@ function showModDetail(id) {
   const m = modsData.find(x => x.id === id);
   if (!m) return;
   
-  const baseUrl = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/`;
+  // 🚀 使用 GitHub Pages 路径或 jsDelivr CDN
+  const useCDN = true; // 设置为 false 则使用 GitHub Pages 路径
+  const baseUrl = useCDN 
+    ? `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/`
+    : (window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/');
+  
   const fileUrl = m.file.startsWith('http') ? m.file : baseUrl + m.file;
   const sourceUrl = m.source && !m.source.startsWith('http') ? baseUrl + m.source : m.source;
   
