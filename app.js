@@ -323,25 +323,32 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 🚀 优先使用 jsDelivr CDN 加载，解决部署后 CORS 和速率限制问题
-    const cdnUrl = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
+    // 🚀 直接使用 GitHub Raw URL（无缓存问题）
+    const rawUrl = `https://raw.githubusercontent.com/${state.user}/${state.repo}/${state.branch}/mods.json?t=${Date.now()}`;
     const apiHeaders = { 'Accept': 'application/vnd.github.v3+json' };
     if (state.ghToken) {
       apiHeaders['Authorization'] = `Bearer ${state.ghToken}`;
     }
     
     let res, json;
+    let fromRaw = true;
     try {
-      // 尝试从 CDN 获取（无 CORS 问题，速度快）
-      res = await fetch(cdnUrl, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`CDN HTTP ${res.status}`);
+      // 尝试从 Raw URL 获取（实时同步，无缓存）
+      console.log('尝试从 GitHub Raw 加载:', rawUrl);
+      res = await fetch(rawUrl, { cache: 'no-store' });
+      console.log('Raw 响应状态:', res.status);
+      if (!res.ok) throw new Error(`Raw HTTP ${res.status}`);
       json = await res.json();
-      console.log('通过 CDN 成功加载 mods.json');
-    } catch (cdnErr) {
-      console.warn('CDN 加载失败，回退到 GitHub API:', cdnErr);
-      // 如果 CDN 失败（比如刚上传还没同步），回退到 API
+      console.log('Raw 返回数据类型:', typeof json, '是否为数组:', Array.isArray(json));
+      console.log('通过 Raw URL 成功加载 mods.json, 数据量:', json.length);
+    } catch (rawErr) {
+      fromRaw = false;
+      console.warn('Raw URL 加载失败，回退到 API:', rawErr.message);
+      // 如果 Raw 失败，回退到 API
       const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+      console.log('尝试从 GitHub API 加载:', apiUrl);
       res = await fetch(apiUrl, { cache: 'no-store', headers: apiHeaders });
+      console.log('API 响应状态:', res.status);
 
       if(res.status === 404) {
         setStatus(T[state.lang].github_status_no_file, '#ff4757');
@@ -355,16 +362,19 @@ async function loadMods() {
 
       const apiJson = await res.json();
       json = apiJson.content ? JSON.parse(base64ToUtf8(apiJson.content)) : [];
+      console.log('通过 API 成功加载 mods.json, 数据量:', json.length);
     }
 
     modsData = Array.isArray(json) ? json : [];
     
-    console.log('数据加载成功，共', modsData.length, state.lang === 'zh' ? '个mod' : 'mods');
-    console.log('Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
-    setStatus(T[state.lang].github_status_synced, '#4ade80');
+    console.log('✅ 最终 modsData.length =', modsData.length);
+    if (modsData.length > 0) {
+      console.log('📦 Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
+    }
+    setStatus(fromRaw ? T[state.lang].github_status_synced : '📡 通过 API 加载', '#4ade80');
     setTimeout(() => setStatus(''), 2000);
   } catch(e) {
-    console.error('加载失败:', e);
+    console.error('❌ 加载失败:', e);
     setStatus(`${T[state.lang].github_status_network_error}: ${e.message}`, '#ff4757');
     document.getElementById('debug-status').style.cursor = 'pointer';
     document.getElementById('debug-status').onclick = () => location.reload();
