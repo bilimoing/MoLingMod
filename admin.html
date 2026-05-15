@@ -44,7 +44,8 @@
       <button class="tab active" onclick="switchTab('upload')" id="tab-btn-upload">上传新 Mod</button>
       <button class="tab" onclick="switchTab('update')" id="tab-btn-update">更新已有 Mod</button>
       <button class="tab" onclick="switchTab('list')">管理列表</button>
-      <button class="tab" onclick="doLogout()" style="margin-left:auto;background:var(--dan);">退出</button>
+      <button class="tab" onclick="logoutToken()" style="margin-left:auto;background:rgba(255,159,67,0.2);" data-i18n="logout_token">退出Token</button>
+      <button class="tab" onclick="doLogout()" style="background:var(--dan);" data-i18n="logout">退出登录</button>
     </div>
 
     <div id="tab-upload" class="tab-panel active">

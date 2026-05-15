@@ -14,7 +14,7 @@ console.log('登录状态:', state.auth ? '已登录' : '未登录');
 
 const T = {
   zh: {
-    title:'末泠的Mod库',
+    title:'末的Mod库',
     terraria:'泰拉瑞亚',
     stardew:'星露谷物语',
     minecraft:'我的世界',
@@ -24,7 +24,8 @@ const T = {
     hint:'默认密码: admin123',
     login_b:'登录',
     cancel:'取消',
-    logout:'退出',
+    logout:'退出登录',
+    logout_token:'退出Token',
     admin_t:'Mod 管理',
     upload:'上传',
     update:'更新',
@@ -103,6 +104,7 @@ const T = {
     login_b:'Login',
     cancel:'Cancel',
     logout:'Logout',
+    logout_token:'Logout Token',
     admin_t:'Mod Admin',
     upload:'Upload',
     update:'Update',
@@ -592,9 +594,20 @@ function doLogin() {
 }
 
 function doLogout() {
-  state.auth=false;
+  state.auth = false;
+  state.ghToken = '';
   localStorage.removeItem('mol_admin');
+  localStorage.removeItem('gh_token_enc');
   sessionStorage.removeItem('mol_admin_session');
+  sessionStorage.removeItem('gh_token_session_enc');
+  location.reload();
+}
+
+// 🔑 新增：仅退出 Token，保留后台登录状态
+function logoutToken() {
+  state.ghToken = '';
+  localStorage.removeItem('gh_token_enc');
+  sessionStorage.removeItem('gh_token_session_enc');
   location.reload();
 }
 
