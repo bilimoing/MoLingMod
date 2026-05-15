@@ -301,37 +301,9 @@ let allFilteredMods = [];
 async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
-
-    if (state.ghToken) {
-      console.log('使用 GitHub API 加载（有 Token）');
-      try {
-        const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
-        const res = await fetch(apiUrl, {
-          cache: 'no-store',
-          headers: {
-            'Authorization': `Bearer ${state.ghToken}`,
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data = await res.json();
-        const content = base64ToUtf8(data.content);
-        const json = JSON.parse(content);
-
-        modsData = Array.isArray(json) ? json : [];
-        console.log('✅ GitHub API 加载成功, modsData.length =', modsData.length);
-        setStatus(T[state.lang].github_status_synced, '#4ade80');
-        setTimeout(() => setStatus(''), 2000);
-        return; // API 成功，直接返回
-      } catch(apiError) {
-        console.warn('⚠️ GitHub API 加载失败，降级到本地路径:', apiError.message);
-        // 降级到本地路径加载
-      }
-    }
-
-    // 本地路径加载（无 Token 或 API 失败时）
+    
+    // 🔑 游戏页面始终使用本地路径加载，不受 Token 影响
+    // Token 仅用于后台上传/更新/删除和下载源码
     console.log('使用 GitHub Pages 本地路径加载');
     const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
     const rawUrl = `${basePath}mods.json?t=${Date.now()}`;
@@ -343,6 +315,10 @@ async function loadMods() {
     const json = await res.json();
     modsData = Array.isArray(json) ? json : [];
     console.log('✅ 本地路径加载成功, modsData.length =', modsData.length);
+    
+    if (modsData.length > 0) {
+      console.log('📦 Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
+    }
     setStatus(T[state.lang].github_status_synced, '#4ade80');
     setTimeout(() => setStatus(''), 2000);
   } catch(e) {
