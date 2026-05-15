@@ -323,7 +323,7 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 🚀 如果有 Token，使用和后台一样的 GitHub API 方式
+    // 🚀 有 Token：使用 GitHub API（和后台一致）
     if (state.ghToken) {
       console.log('使用 GitHub API 加载（有 Token）');
       const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
@@ -343,17 +343,17 @@ async function loadMods() {
       
       modsData = Array.isArray(json) ? json : [];
       console.log('✅ GitHub API 加载成功, modsData.length =', modsData.length);
-    } else {
-      // 🚀 没有 Token，使用 GitHub Raw URL（公开仓库无需认证）
-      console.log('使用 GitHub Raw URL 加载（无 Token）');
-      const rawUrl = `https://raw.githubusercontent.com/${state.user}/${state.repo}/${state.branch}/mods.json?t=${Date.now()}`;
-      const res = await fetch(rawUrl, { cache: 'no-store' });
+    } 
+    //  没有 Token：直接用相对路径读取（GitHub Pages 同域访问，无 CORS 问题）
+    else {
+      console.log('使用本地路径加载 mods.json');
+      const res = await fetch('mods.json?t=' + Date.now(), { cache: 'no-store' });
       
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       
       const json = await res.json();
       modsData = Array.isArray(json) ? json : [];
-      console.log('✅ Raw URL 加载成功, modsData.length =', modsData.length);
+      console.log('✅ 本地路径加载成功, modsData.length =', modsData.length);
     }
     
     if (modsData.length > 0) {
