@@ -323,28 +323,41 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    const url = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
-    const headers = { 'Accept': 'application/vnd.github.v3+json' };
+    // 🚀 优先使用 jsDelivr CDN 加载，解决部署后 CORS 和速率限制问题
+    const cdnUrl = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
+    const apiHeaders = { 'Accept': 'application/vnd.github.v3+json' };
     if (state.ghToken) {
-      headers['Authorization'] = `Bearer ${state.ghToken}`;
+      apiHeaders['Authorization'] = `Bearer ${state.ghToken}`;
     }
     
-    const res = await fetch(url, { cache: 'no-store', headers });
+    let res, json;
+    try {
+      // 尝试从 CDN 获取（无 CORS 问题，速度快）
+      res = await fetch(cdnUrl, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`CDN HTTP ${res.status}`);
+      json = await res.json();
+      console.log('通过 CDN 成功加载 mods.json');
+    } catch (cdnErr) {
+      console.warn('CDN 加载失败，回退到 GitHub API:', cdnErr);
+      // 如果 CDN 失败（比如刚上传还没同步），回退到 API
+      const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+      res = await fetch(apiUrl, { cache: 'no-store', headers: apiHeaders });
 
-    console.log('响应状态:', res.status);
+      if(res.status === 404) {
+        setStatus(T[state.lang].github_status_no_file, '#ff4757');
+        modsData = []; return;
+      }
+      if(res.status === 403) {
+        setStatus(T[state.lang].github_status_access_denied, '#ff4757');
+        modsData = []; return;
+      }
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    if(res.status === 404) {
-      setStatus(T[state.lang].github_status_no_file, '#ff4757');
-      modsData = []; return;
+      const apiJson = await res.json();
+      json = apiJson.content ? JSON.parse(base64ToUtf8(apiJson.content)) : [];
     }
-    if(res.status === 403) {
-      setStatus(T[state.lang].github_status_access_denied, '#ff4757');
-      modsData = []; return;
-    }
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const json = await res.json();
-    modsData = json.content ? JSON.parse(base64ToUtf8(json.content)) : [];
+    modsData = Array.isArray(json) ? json : [];
     
     console.log('数据加载成功，共', modsData.length, state.lang === 'zh' ? '个mod' : 'mods');
     console.log('Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
