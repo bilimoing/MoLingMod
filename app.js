@@ -190,7 +190,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOM 加载完成');
 
   applyLang(); initMusic(); init3DTilt();
-  if(state.ghToken) document.getElementById('token-status').textContent = 'Token 已就绪';
+  const tokenStatusEl = document.getElementById('token-status');
+  if(tokenStatusEl && state.ghToken) tokenStatusEl.textContent = 'Token 已就绪';
 
   console.log('初始化开始');
   setStatus('📡 正在连接 GitHub...', '#4ade80');
