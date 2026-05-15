@@ -33,9 +33,9 @@
   </div>
   <div class="search-results-info" id="search-info"></div>
 
-  <!-- 🔑 Token 配置区 -->
-  <div id="token-config-inline" style="text-align:center;padding:15px;background:rgba(0,0,0,0.3);border-radius:10px;margin-bottom:20px;">
-    <p style="color:#ff9f43;font-size:0.9rem;margin-bottom:10px;" data-i18n="token_needed">需要 GitHub Token 才能查看 Mod</p>
+  <!-- 🔑 Token 配置区（仅用于提升 API 限制，非必需） -->
+  <div id="token-config-inline" style="text-align:center;padding:15px;background:rgba(0,0,0,0.3);border-radius:10px;margin-bottom:20px;display:none;">
+    <p style="color:#ff9f43;font-size:0.9rem;margin-bottom:10px;" data-i18n="token_needed">可选：输入 Token 提升加载速度</p>
     <label for="inline-gh-token"></label><input type="password" id="inline-gh-token" placeholder="粘贴 github_pat_..." style="padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;width:300px;margin-right:10px;">
     <label style="display:inline-flex;align-items:center;color:#fff;font-size:0.85rem;margin-right:10px;cursor:pointer;" onclick="preventLabelJump(event)">
       <input type="checkbox" id="inline-remember-token" checked style="margin-right:5px;width:auto;"> <span data-i18n="remember_me">记住我</span>
@@ -48,45 +48,21 @@
 </main>
 <script src="app.js"></script>
 <script>
-  // 🛡️ 立即执行：在脚本加载时就检查并隐藏输入框
-  (function() {
-    const hasToken = localStorage.getItem('gh_token_enc') || sessionStorage.getItem('gh_token_session_enc');
-    if(hasToken) {
-      document.addEventListener('DOMContentLoaded', function() {
-        const el = document.getElementById('token-config-inline');
-        if(el) el.style.display = 'none';
-      });
-    }
-  })();
-
   function saveInlineToken() {
     const t = document.getElementById('inline-gh-token').value.trim();
     const rememberToken = document.getElementById('inline-remember-token')?.checked;
-    
     if(t.startsWith('github_pat_')) {
       const encrypted = encode(t);
-      if(rememberToken) {
-        localStorage.setItem('gh_token_enc', encrypted);
-      } else {
-        sessionStorage.setItem('gh_token_session_enc', encrypted);
-      }
+      if(rememberToken) localStorage.setItem('gh_token_enc', encrypted);
+      else sessionStorage.setItem('gh_token_session_enc', encrypted);
       state.ghToken = t;
       document.getElementById('token-config-inline').style.display = 'none';
       setStatus('Token 已保存，重新加载中...', '#4ade80');
       setTimeout(() => location.reload(), 1000);
-    } else {
-      alert('Token 格式错误，必须以 github_pat_ 开头');
-    }
+    } else alert('Token 格式错误，必须以 github_pat_ 开头');
   }
   window.addEventListener('DOMContentLoaded', () => {
-    if(!state.ghToken) {
-      // 没有 Token，显示输入框
-      document.getElementById('token-config-inline').style.display = 'block';
-      setStatus('请先输入 GitHub Token', '#ff9f43');
-    } else {
-      // 已有 Token，隐藏输入框，app.js 会自动渲染
-      document.getElementById('token-config-inline').style.display = 'none';
-    }
+    console.log('游戏页面加载，自动获取 Mod 数据');
   });
 </script>
 </body>

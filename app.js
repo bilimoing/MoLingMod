@@ -323,21 +323,45 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 🚀 使用 jsDelivr CDN 加载 mods.json（解决 GitHub Pages 跨域问题）
-    const cdnUrl = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
+    // 如果有 Token，直接使用 GitHub API 获取最新数据（无需 CDN 缓存）
+    if (state.ghToken) {
+      console.log('使用 GitHub API 加载（有 Token）');
+      try {
+        const r = await ghGet('mods.json');
+        modsData = JSON.parse(base64ToUtf8(r.content));
+        console.log('✅ GitHub API 加载成功, modsData.length =', modsData.length);
+        if (modsData.length > 0) {
+          console.log('📦 Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
+        }
+        setStatus(T[state.lang].github_status_synced, '#4ade80');
+        setTimeout(() => setStatus(''), 2000);
+        return;
+      } catch(apiErr) {
+        console.log('GitHub API 失败，降级到 CDN:', apiErr.message);
+      }
+    }
     
-    console.log('尝试加载文件:', cdnUrl);
-    const res = await fetch(cdnUrl, { cache: 'no-store' });
+    // 🚀 优先使用 GitHub Pages 本地路径（实时，无 CDN 缓存延迟）
+    const basePath = window.location.pathname.includes('/MoLingMod/') ? '/MoLingMod/' : '/';
+    const localUrl = `${basePath}mods.json?t=${Date.now()}`;
+    
+    console.log('尝试加载本地文件:', localUrl);
+    const res = await fetch(localUrl, { cache: 'no-store' });
     console.log('响应状态:', res.status);
     
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      // 如果本地路径失败，降级到 CDN
+      console.log('本地路径失败，尝试 CDN...');
+      const cdnUrl = `https://cdn.jsdelivr.net/gh/${state.user}/${state.repo}@${state.branch}/mods.json?t=${Date.now()}`;
+      const cdnRes = await fetch(cdnUrl, { cache: 'no-store' });
+      if (!cdnRes.ok) throw new Error(`HTTP ${cdnRes.status}`);
+      const json = await cdnRes.json();
+      modsData = Array.isArray(json) ? json : [];
+    } else {
+      const json = await res.json();
+      console.log('返回数据类型:', typeof json, '是否为数组:', Array.isArray(json));
+      modsData = Array.isArray(json) ? json : [];
     }
-    
-    const json = await res.json();
-    console.log('返回数据类型:', typeof json, '是否为数组:', Array.isArray(json));
-    
-    modsData = Array.isArray(json) ? json : [];
     
     console.log('✅ 最终 modsData.length =', modsData.length);
     if (modsData.length > 0) {
