@@ -323,23 +323,39 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 🚀 使用 GitHub Raw URL 直接加载（公开仓库，无 CORS 问题）
-    const rawUrl = `https://raw.githubusercontent.com/${state.user}/${state.repo}/${state.branch}/mods.json?t=${Date.now()}`;
-    
-    console.log('尝试从 GitHub Raw 加载:', rawUrl);
-    const res = await fetch(rawUrl, { cache: 'no-store' });
-    console.log('响应状态:', res.status);
-    
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+    // 🚀 如果有 Token，使用和后台一样的 GitHub API 方式
+    if (state.ghToken) {
+      console.log('使用 GitHub API 加载（有 Token）');
+      const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+      const res = await fetch(apiUrl, { 
+        cache: 'no-store', 
+        headers: { 
+          'Authorization': `Bearer ${state.ghToken}`, 
+          'Accept': 'application/vnd.github.v3+json' 
+        } 
+      });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const data = await res.json();
+      const content = base64ToUtf8(data.content);
+      const json = JSON.parse(content);
+      
+      modsData = Array.isArray(json) ? json : [];
+      console.log('✅ GitHub API 加载成功, modsData.length =', modsData.length);
+    } else {
+      // 🚀 没有 Token，使用 GitHub Raw URL（公开仓库无需认证）
+      console.log('使用 GitHub Raw URL 加载（无 Token）');
+      const rawUrl = `https://raw.githubusercontent.com/${state.user}/${state.repo}/${state.branch}/mods.json?t=${Date.now()}`;
+      const res = await fetch(rawUrl, { cache: 'no-store' });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const json = await res.json();
+      modsData = Array.isArray(json) ? json : [];
+      console.log('✅ Raw URL 加载成功, modsData.length =', modsData.length);
     }
     
-    const json = await res.json();
-    console.log('返回数据类型:', typeof json, '是否为数组:', Array.isArray(json));
-    
-    modsData = Array.isArray(json) ? json : [];
-    
-    console.log('✅ 最终 modsData.length =', modsData.length);
     if (modsData.length > 0) {
       console.log('📦 Mod 列表:', modsData.map(m => `${m.name} (${m.game})`).join(', '));
     }
