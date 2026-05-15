@@ -323,23 +323,19 @@ async function loadMods() {
   try {
     console.log('开始加载 mods.json...');
     
-    // 🚀 直接使用 GitHub API 加载（公开仓库无需 Token）
-    const apiUrl = `https://api.github.com/repos/${state.user}/${state.repo}/contents/mods.json?ref=${state.branch}&t=${Date.now()}`;
+    // 🚀 使用 GitHub Raw URL 直接加载（公开仓库，无 CORS 问题）
+    const rawUrl = `https://raw.githubusercontent.com/${state.user}/${state.repo}/${state.branch}/mods.json?t=${Date.now()}`;
     
-    console.log('尝试从 GitHub API 加载:', apiUrl);
-    const res = await fetch(apiUrl, { cache: 'no-store' });
+    console.log('尝试从 GitHub Raw 加载:', rawUrl);
+    const res = await fetch(rawUrl, { cache: 'no-store' });
     console.log('响应状态:', res.status);
     
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }
     
-    const data = await res.json();
-    console.log('返回数据类型:', typeof data, 'content 字段:', data.content ? '存在' : '不存在');
-    
-    // Base64 解码
-    const content = base64ToUtf8(data.content);
-    const json = JSON.parse(content);
+    const json = await res.json();
+    console.log('返回数据类型:', typeof json, '是否为数组:', Array.isArray(json));
     
     modsData = Array.isArray(json) ? json : [];
     
